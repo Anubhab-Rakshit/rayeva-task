@@ -1,0 +1,12 @@
+8c541863b4b6934b68b1494d2ab24ce3
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _nodeCrypto = require("node:crypto");
+var _default = exports.default = {
+  randomUUID: _nodeCrypto.randomUUID
+};
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJfbm9kZUNyeXB0byIsInJlcXVpcmUiLCJfZGVmYXVsdCIsImV4cG9ydHMiLCJkZWZhdWx0IiwicmFuZG9tVVVJRCJdLCJzb3VyY2VzIjpbIm5hdGl2ZS5qcyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyByYW5kb21VVUlEIH0gZnJvbSAnbm9kZTpjcnlwdG8nO1xuZXhwb3J0IGRlZmF1bHQgeyByYW5kb21VVUlEIH07XG4iXSwibWFwcGluZ3MiOiI7Ozs7OztBQUFBLElBQUFBLFdBQUEsR0FBQUMsT0FBQTtBQUF5QyxJQUFBQyxRQUFBLEdBQUFDLE9BQUEsQ0FBQUMsT0FBQSxHQUMxQjtFQUFFQyxVQUFVLEVBQVZBO0FBQVcsQ0FBQyIsImlnbm9yZUxpc3QiOltdfQ==

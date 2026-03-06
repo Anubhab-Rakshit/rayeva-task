@@ -1,0 +1,974 @@
+7b6349973b8a3a3728f2bcaa637d7243
+/*
+Copyright (c) 2012, Guillaume Marty
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
+
+'use strict';
+
+/**
+ * A transliteration of Katakana & Hiragana to roman characters using the
+ * modified Hepburn system.
+ * Rules based on CLDR transform rule set `Katakana-Latin-BGN.xml` but with
+ * several bugs fixed:
+ *  * Missing ū
+ *  * Missing tsu + voiced kana
+ *  * typos on my~ transliterations
+ *  * support for long vowel sign
+ *  * support for final small tsu
+ *  * support for u + small vowels
+ *  * support for su/shi/ji + small vowels
+ *  * support for tchi/tsu/te/to + small vowels
+ *  * support for fu + small vowels
+ *  * support for katakana middle dot
+ *
+ * \@todo Take iteration marks into account.
+ */
+const replacer = require('../../util/utils').replacer;
+const transliterationTable1 = {
+  ウァ: 'wa',
+  // KATAKANA LETTER U + SMALL A
+  ウィ: 'wi',
+  // KATAKANA LETTER U + SMALL I
+  ウェ: 'we',
+  // KATAKANA LETTER U + SMALL E
+  ウォ: 'wo',
+  // KATAKANA LETTER U + SMALL O
+  ウー: 'ū',
+  // KATAKANA LETTER VU + PROLONGED SOUND MARK
+
+  ヴァ: 'va',
+  // KATAKANA LETTER VU + SMALL A
+  ヴィ: 'vi',
+  // KATAKANA LETTER VU + SMALL I
+  ヴェ: 've',
+  // KATAKANA LETTER VU + SMALL E
+  ヴォ: 'vo',
+  // KATAKANA LETTER VU + SMALL O
+  ヴュ: 'vyu',
+  // KATAKANA LETTER VU + SMALL YU
+
+  うぁ: 'wa',
+  // HIRAGANA LETTER U + SMALL A
+  うぃ: 'wi',
+  // HIRAGANA LETTER U + SMALL I
+  うぇ: 'we',
+  // HIRAGANA LETTER U + SMALL E
+  うぉ: 'wo',
+  // HIRAGANA LETTER U + SMALL O
+  うー: 'ū',
+  // HIRAGANA LETTER VU + PROLONGED SOUND MARK
+
+  ゔぁ: 'va',
+  // HIRAGANA LETTER VU + SMALL A
+  ゔぃ: 'vi',
+  // HIRAGANA LETTER VU + SMALL I
+  ゔぇ: 've',
+  // HIRAGANA LETTER VU + SMALL E
+  ゔぉ: 'vo',
+  // HIRAGANA LETTER VU + SMALL O
+  ゔゅ: 'vyu' // HIRAGANA LETTER VU + SMALL YU
+};
+const transliterationTable2 = {
+  イェ: 'ye',
+  // KATAKANA LETTER I + SMALL E
+
+  ア: 'a',
+  // KATAKANA LETTER A
+  イ: 'i',
+  // KATAKANA LETTER I
+  ウウ: 'ū',
+  // KATAKANA LETTER U + U
+  ウ: 'u',
+  // KATAKANA LETTER U
+  エ: 'e',
+  // KATAKANA LETTER E
+  オウ: 'ō',
+  // KATAKANA LETTER O + U
+  オ: 'o',
+  // KATAKANA LETTER O
+
+  クァ: 'kwa',
+  // KATAKANA LETTER KU + SMALL A
+  クィ: 'kwi',
+  // KATAKANA LETTER KU + SMALL I
+  クェ: 'kwe',
+  // KATAKANA LETTER KU + SMALL E
+  クォ: 'kwo',
+  // KATAKANA LETTER KU + SMALL O
+
+  カ: 'ka',
+  // KATAKANA LETTER KA
+  キョウ: 'kyō',
+  // KATAKANA LETTER KI + SMALL YO + U
+  キュウ: 'kyū',
+  // KATAKANA LETTER KI + SMALL YU + U
+  キャ: 'kya',
+  // KATAKANA LETTER KI + SMALL YA
+  キョ: 'kyo',
+  // KATAKANA LETTER KI + SMALL YO
+  キュ: 'kyu',
+  // KATAKANA LETTER KI + SMALL YU
+  キ: 'ki',
+  // KATAKANA LETTER KI
+  ク: 'ku',
+  // KATAKANA LETTER KU
+  ケ: 'ke',
+  // KATAKANA LETTER KE
+  コウ: 'kō',
+  // KATAKANA LETTER KO + U
+  コ: 'ko',
+  // KATAKANA LETTER KO
+
+  シェ: 'she',
+  // KATAKANA LETTER SI + SMALL E
+  スィ: 'si',
+  // KATAKANA LETTER SU + SMALL I
+
+  サ: 'sa',
+  // KATAKANA LETTER SA
+  ショウ: 'shō',
+  // KATAKANA LETTER SI + SMALL YO + U
+  シュウ: 'shū',
+  // KATAKANA LETTER SI + SMALL YU + U
+  シャ: 'sha',
+  // KATAKANA LETTER SI + SMALL YA
+  ショ: 'sho',
+  // KATAKANA LETTER SI + SMALL YO
+  シュ: 'shu',
+  // KATAKANA LETTER SI + SMALL YU
+  シ: 'shi',
+  // KATAKANA LETTER SI
+  スウ: 'sū',
+  // KATAKANA LETTER SU + U
+  ス: 'su',
+  // KATAKANA LETTER SU
+  セ: 'se',
+  // KATAKANA LETTER SE
+  ソウ: 'sō',
+  // KATAKANA LETTER SO + U
+  ソ: 'so',
+  // KATAKANA LETTER SO
+
+  チェ: 'che',
+  // KATAKANA LETTER TI + SMALL E
+  ツァ: 'tsa',
+  // KATAKANA LETTER TU + SMALL A
+  ツィ: 'tsi',
+  // KATAKANA LETTER TU + SMALL I
+  ツェ: 'tse',
+  // KATAKANA LETTER TU + SMALL E
+  ツォ: 'tso',
+  // KATAKANA LETTER TU + SMALL O
+  ティ: 'ti',
+  // KATAKANA LETTER TE + SMALL I
+  ディ: 'di',
+  // KATAKANA LETTER DE + SMALL I
+  テュ: 'tyu',
+  // KATAKANA LETTER TE + SMALL YU
+  デュ: 'dyu',
+  // KATAKANA LETTER DE + SMALL YU
+  トィ: 'twi',
+  // KATAKANA LETTER TO + SMALL I
+  トゥ: 'tu',
+  // KATAKANA LETTER TO + SMALL U
+  ドィ: 'dwi',
+  // KATAKANA LETTER DO + SMALL I
+  ドゥ: 'du',
+  // KATAKANA LETTER DO + SMALL U
+
+  タ: 'ta',
+  // KATAKANA LETTER TA
+  チョウ: 'chō',
+  // KATAKANA LETTER TI + SMALL YO + U
+  チュウ: 'chū',
+  // KATAKANA LETTER TI + SMALL YU + U
+  チャ: 'cha',
+  // KATAKANA LETTER TI + SMALL YA
+  チョ: 'cho',
+  // KATAKANA LETTER TI + SMALL YO
+  チュ: 'chu',
+  // KATAKANA LETTER TI + SMALL YU
+  チ: 'chi',
+  // KATAKANA LETTER TI
+  ツウ: 'tsū',
+  // KATAKANA LETTER TU + U
+  ツ: 'tsu',
+  // KATAKANA LETTER TU
+  テ: 'te',
+  // KATAKANA LETTER TE
+  トウ: 'tō',
+  // KATAKANA LETTER TO + U
+  ト: 'to',
+  // KATAKANA LETTER TO
+
+  ナ: 'na',
+  // KATAKANA LETTER NA
+  ニョウ: 'nyō',
+  // KATAKANA LETTER NI + SMALL YO + U
+  ニュウ: 'nyū',
+  // KATAKANA LETTER NI + SMALL YU + U
+  ニャ: 'nya',
+  // KATAKANA LETTER NI + SMALL YA
+  ニョ: 'nyo',
+  // KATAKANA LETTER NI + SMALL YO
+  ニュ: 'nyu',
+  // KATAKANA LETTER NI + SMALL YU
+  ニ: 'ni',
+  // KATAKANA LETTER NI
+  ヌウ: 'nū',
+  // KATAKANA LETTER NU + U
+  ヌ: 'nu',
+  // KATAKANA LETTER NU
+  ネ: 'ne',
+  // KATAKANA LETTER NE
+  ノウ: 'nō',
+  // KATAKANA LETTER NO + U
+  ノ: 'no',
+  // KATAKANA LETTER NO
+
+  ファ: 'fa',
+  // KATAKANA LETTER HU + SMALL A
+  フィ: 'fi',
+  // KATAKANA LETTER HU + SMALL I
+  // 'フゥ': 'fu', // KATAKANA LETTER HU + SMALL U
+  フェ: 'fe',
+  // KATAKANA LETTER HU + SMALL E
+  フォ: 'fo',
+  // KATAKANA LETTER HU + SMALL O
+  フュ: 'fyu',
+  // KATAKANA LETTER HU + SMALL YU
+  ホェ: 'hwe',
+  // KATAKANA LETTER HO + SMALL E
+
+  ハ: 'ha',
+  // KATAKANA LETTER HA
+  ヒョウ: 'hyō',
+  // KATAKANA LETTER HI + SMALL YO + U
+  ヒュウ: 'hyū',
+  // KATAKANA LETTER HI + SMALL YU + U
+  ヒャ: 'hya',
+  // KATAKANA LETTER HI + SMALL YA
+  ヒョ: 'hyo',
+  // KATAKANA LETTER HI + SMALL YO
+  ヒュ: 'hyu',
+  // KATAKANA LETTER HI + SMALL YU
+  ヒ: 'hi',
+  // KATAKANA LETTER HI
+  フウ: 'fū',
+  // KATAKANA LETTER HU + U
+  フ: 'fu',
+  // KATAKANA LETTER HU
+  ヘ: 'he',
+  // KATAKANA LETTER HE
+  ホウ: 'hō',
+  // KATAKANA LETTER HO + U
+  ホ: 'ho',
+  // KATAKANA LETTER HO
+
+  マ: 'ma',
+  // KATAKANA LETTER MA
+  ミョウ: 'myō',
+  // KATAKANA LETTER MI + SMALL YO + U
+  ミュウ: 'myū',
+  // KATAKANA LETTER MI + SMALL YU + U
+  ミャ: 'mya',
+  // KATAKANA LETTER MI + SMALL YA
+  ミョ: 'myo',
+  // KATAKANA LETTER MI + SMALL YO
+  ミュ: 'myu',
+  // KATAKANA LETTER MI + SMALL YU
+  ミ: 'mi',
+  // KATAKANA LETTER MI
+  ムウ: 'mū',
+  // KATAKANA LETTER MU + U
+  ム: 'mu',
+  // KATAKANA LETTER MU
+  メ: 'me',
+  // KATAKANA LETTER ME
+  モウ: 'mō',
+  // KATAKANA LETTER MO + U
+  モ: 'mo',
+  // KATAKANA LETTER MO
+
+  ヤ: 'ya',
+  // KATAKANA LETTER YA
+  ユウ: 'yū',
+  // KATAKANA LETTER YU + U
+  ユ: 'yu',
+  // KATAKANA LETTER YU
+  ヨウ: 'yō',
+  // KATAKANA LETTER YO + U
+  ヨ: 'yo',
+  // KATAKANA LETTER YO
+
+  リェ: 'rye',
+  // KATAKANA LETTER RI + SMALL E
+
+  ラ: 'ra',
+  // KATAKANA LETTER RA
+  リョウ: 'ryō',
+  // KATAKANA LETTER RI + SMALL YO + U
+  リュウ: 'ryū',
+  // KATAKANA LETTER RI + SMALL YU + U
+  リャ: 'rya',
+  // KATAKANA LETTER RI + SMALL YA
+  リョ: 'ryo',
+  // KATAKANA LETTER RI + SMALL YO
+  リュ: 'ryu',
+  // KATAKANA LETTER RI + SMALL YU
+  リ: 'ri',
+  // KATAKANA LETTER RI
+  ルウ: 'rū',
+  // KATAKANA LETTER RU + U
+  ル: 'ru',
+  // KATAKANA LETTER RU
+  レ: 're',
+  // KATAKANA LETTER RE
+  ロウ: 'rō',
+  // KATAKANA LETTER RO + U
+  ロ: 'ro',
+  // KATAKANA LETTER RO
+
+  ワ: 'wa',
+  // KATAKANA LETTER WA
+  ヰ: 'i',
+  // KATAKANA LETTER WI
+  ヱ: 'e',
+  // KATAKANA LETTER WE
+  ヲ: 'o',
+  // KATAKANA LETTER WO
+
+  ン: 'n',
+  // KATAKANA LETTER N
+
+  グァ: 'gwa',
+  // KATAKANA LETTER GU + SMALL A
+  グィ: 'gwi',
+  // KATAKANA LETTER GU + SMALL I
+  グェ: 'gwe',
+  // KATAKANA LETTER GU + SMALL E
+  グォ: 'gwo',
+  // KATAKANA LETTER GU + SMALL O
+
+  ガ: 'ga',
+  // KATAKANA LETTER GA
+  ギョウ: 'gyō',
+  // KATAKANA LETTER GI + SMALL YO + U
+  ギュウ: 'gyū',
+  // KATAKANA LETTER GI + SMALL YU + U
+  ギャ: 'gya',
+  // KATAKANA LETTER GI + SMALL YA
+  ギョ: 'gyo',
+  // KATAKANA LETTER GI + SMALL YO
+  ギュ: 'gyu',
+  // KATAKANA LETTER GI + SMALL YU
+  ギ: 'gi',
+  // KATAKANA LETTER GI
+  グウ: 'gū',
+  // KATAKANA LETTER GU + U
+  グ: 'gu',
+  // KATAKANA LETTER GU
+  ゲ: 'ge',
+  // KATAKANA LETTER GE
+  ゴウ: 'gō',
+  // KATAKANA LETTER GO + U
+  ゴ: 'go',
+  // KATAKANA LETTER GO
+
+  ジェ: 'je',
+  // KATAKANA LETTER ZI + SMALL E
+  ズィ: 'zi',
+  // KATAKANA LETTER ZU + SMALL I
+
+  ザ: 'za',
+  // KATAKANA LETTER ZA
+  ジョウ: 'jō',
+  // KATAKANA LETTER ZI + SMALL YO + U
+  ジュウ: 'jū',
+  // KATAKANA LETTER ZI + SMALL YU + U
+  ジャ: 'ja',
+  // KATAKANA LETTER ZI + SMALL YA
+  ジョ: 'jo',
+  // KATAKANA LETTER ZI + SMALL YO
+  ジュ: 'ju',
+  // KATAKANA LETTER ZI + SMALL YU
+  ジ: 'ji',
+  // KATAKANA LETTER ZI
+  ズウ: 'zū',
+  // KATAKANA LETTER ZU + U
+  ズ: 'zu',
+  // KATAKANA LETTER ZU
+  ゼ: 'ze',
+  // KATAKANA LETTER ZE
+  ゾウ: 'zō',
+  // KATAKANA LETTER ZO + U
+  ゾ: 'zo',
+  // KATAKANA LETTER ZO
+
+  ダ: 'da',
+  // KATAKANA LETTER DA
+  ヂ: 'ji',
+  // KATAKANA LETTER DI
+  ヅウ: 'zū',
+  // KATAKANA LETTER DU + U
+  ヅ: 'zu',
+  // KATAKANA LETTER DU
+  デ: 'de',
+  // KATAKANA LETTER DE
+  ドウ: 'dō',
+  // KATAKANA LETTER DO + U
+  ド: 'do',
+  // KATAKANA LETTER DO
+
+  ブュ: 'byu',
+  // KATAKANA LETTER BU + SMALL YU
+
+  バ: 'ba',
+  // KATAKANA LETTER BA
+  ビョウ: 'byō',
+  // KATAKANA LETTER BI + SMALL YO + U
+  ビュウ: 'byū',
+  // KATAKANA LETTER BI + SMALL YU + U
+  ビャ: 'bya',
+  // KATAKANA LETTER BI + SMALL YA
+  ビョ: 'byo',
+  // KATAKANA LETTER BI + SMALL YO
+  ビュ: 'byu',
+  // KATAKANA LETTER BI + SMALL YU
+  ビ: 'bi',
+  // KATAKANA LETTER BI
+  ブウ: 'bū',
+  // KATAKANA LETTER BU + U
+  ブ: 'bu',
+  // KATAKANA LETTER BU
+  ベ: 'be',
+  // KATAKANA LETTER BE
+  ボウ: 'bō',
+  // KATAKANA LETTER BO + U
+  ボ: 'bo',
+  // KATAKANA LETTER BO
+
+  パ: 'pa',
+  // KATAKANA LETTER PA
+  ピョウ: 'pyō',
+  // KATAKANA LETTER PI + SMALL YO + U
+  ピュウ: 'pyū',
+  // KATAKANA LETTER PI + SMALL YU + U
+  ピャ: 'pya',
+  // KATAKANA LETTER PI + SMALL YA
+  ピョ: 'pyo',
+  // KATAKANA LETTER PI + SMALL YO
+  ピュ: 'pyu',
+  // KATAKANA LETTER PI + SMALL YU
+  ピ: 'pi',
+  // KATAKANA LETTER PI
+  プウ: 'pū',
+  // KATAKANA LETTER PU + U
+  プ: 'pu',
+  // KATAKANA LETTER PU
+  ペ: 'pe',
+  // KATAKANA LETTER PE
+  ポウ: 'pō',
+  // KATAKANA LETTER PO + U
+  ポ: 'po',
+  // KATAKANA LETTER PO
+
+  ヴ: 'v',
+  // KATAKANA LETTER VU
+
+  '・': ' ',
+  // KATAKANA MIDDLE DOT
+
+  いぇ: 'ye',
+  // HIRAGANA LETTER I + SMALL E
+
+  あ: 'a',
+  // HIRAGANA LETTER A
+  い: 'i',
+  // HIRAGANA LETTER I
+  うう: 'ū',
+  // HIRAGANA LETTER U + U
+  う: 'u',
+  // HIRAGANA LETTER U
+  え: 'e',
+  // HIRAGANA LETTER E
+  おう: 'ō',
+  // HIRAGANA LETTER O + U
+  お: 'o',
+  // HIRAGANA LETTER O
+
+  くぁ: 'kwa',
+  // HIRAGANA LETTER KU + SMALL A
+  くぃ: 'kwi',
+  // HIRAGANA LETTER KU + SMALL I
+  くぇ: 'kwe',
+  // HIRAGANA LETTER KU + SMALL E
+  くぉ: 'kwo',
+  // HIRAGANA LETTER KU + SMALL O
+
+  か: 'ka',
+  // HIRAGANA LETTER KA
+  きょう: 'kyō',
+  // HIRAGANA LETTER KI + SMALL YO + U
+  きゅう: 'kyū',
+  // HIRAGANA LETTER KI + SMALL YU + U
+  きゃ: 'kya',
+  // HIRAGANA LETTER KI + SMALL YA
+  きょ: 'kyo',
+  // HIRAGANA LETTER KI + SMALL YO
+  きゅ: 'kyu',
+  // HIRAGANA LETTER KI + SMALL YU
+  き: 'ki',
+  // HIRAGANA LETTER KI
+  くう: 'kū',
+  // HIRAGANA LETTER KU + U
+  く: 'ku',
+  // HIRAGANA LETTER KU
+  け: 'ke',
+  // HIRAGANA LETTER KE
+  こう: 'kō',
+  // HIRAGANA LETTER KO + U
+  こ: 'ko',
+  // HIRAGANA LETTER KO
+
+  しぇ: 'she',
+  // HIRAGANA LETTER SI + SMALL E
+  すぃ: 'si',
+  // HIRAGANA LETTER SU + SMALL I
+
+  さ: 'sa',
+  // HIRAGANA LETTER SA
+  しょう: 'shō',
+  // HIRAGANA LETTER SI + SMALL YO + U
+  しゅう: 'shū',
+  // HIRAGANA LETTER SI + SMALL YU + U
+  しゃ: 'sha',
+  // HIRAGANA LETTER SI + SMALL YA
+  しょ: 'sho',
+  // HIRAGANA LETTER SI + SMALL YO
+  しゅ: 'shu',
+  // HIRAGANA LETTER SI + SMALL YU
+  し: 'shi',
+  // HIRAGANA LETTER SI
+  すう: 'sū',
+  // HIRAGANA LETTER SU + U
+  す: 'su',
+  // HIRAGANA LETTER SU
+  せ: 'se',
+  // HIRAGANA LETTER SE
+  そう: 'sō',
+  // HIRAGANA LETTER SO + U
+  そ: 'so',
+  // HIRAGANA LETTER SO
+
+  ちぇ: 'che',
+  // HIRAGANA LETTER TI + SMALL E
+  つぁ: 'tsa',
+  // HIRAGANA LETTER TU + SMALL A
+  つぃ: 'tsi',
+  // HIRAGANA LETTER TU + SMALL I
+  つぇ: 'tse',
+  // HIRAGANA LETTER TU + SMALL E
+  つぉ: 'tso',
+  // HIRAGANA LETTER TU + SMALL O
+  てぃ: 'ti',
+  // HIRAGANA LETTER TE + SMALL I
+  でぃ: 'di',
+  // HIRAGANA LETTER DE + SMALL I
+  てゅ: 'tyu',
+  // HIRAGANA LETTER TE + SMALL YU
+  でゅ: 'dyu',
+  // HIRAGANA LETTER DE + SMALL YU
+  とぃ: 'twi',
+  // HIRAGANA LETTER TO + SMALL I
+  とぅ: 'tu',
+  // HIRAGANA LETTER TO + SMALL U
+  どぃ: 'dwi',
+  // HIRAGANA LETTER DO + SMALL I
+  どぅ: 'du',
+  // HIRAGANA LETTER DO + SMALL U
+
+  た: 'ta',
+  // HIRAGANA LETTER TA
+  ちょう: 'chō',
+  // HIRAGANA LETTER TI + SMALL YO + U
+  ちゅう: 'chū',
+  // HIRAGANA LETTER TI + SMALL YU + U
+  ちゃ: 'cha',
+  // HIRAGANA LETTER TI + SMALL YA
+  ちょ: 'cho',
+  // HIRAGANA LETTER TI + SMALL YO
+  ちゅ: 'chu',
+  // HIRAGANA LETTER TI + SMALL YU
+  ち: 'chi',
+  // HIRAGANA LETTER TI
+  つう: 'tsū',
+  // HIRAGANA LETTER TU + U
+  つ: 'tsu',
+  // HIRAGANA LETTER TU
+  て: 'te',
+  // HIRAGANA LETTER TE
+  とう: 'tō',
+  // HIRAGANA LETTER TO + U
+  と: 'to',
+  // HIRAGANA LETTER TO
+
+  な: 'na',
+  // HIRAGANA LETTER NA
+  にょう: 'nyō',
+  // HIRAGANA LETTER NI + SMALL YO + U
+  にゅう: 'nyū',
+  // HIRAGANA LETTER NI + SMALL YU + U
+  にゃ: 'nya',
+  // HIRAGANA LETTER NI + SMALL YA
+  にょ: 'nyo',
+  // HIRAGANA LETTER NI + SMALL YO
+  にゅ: 'nyu',
+  // HIRAGANA LETTER NI + SMALL YU
+  に: 'ni',
+  // HIRAGANA LETTER NI
+  ぬう: 'nū',
+  // HIRAGANA LETTER NU + U
+  ぬ: 'nu',
+  // HIRAGANA LETTER NU
+  ね: 'ne',
+  // HIRAGANA LETTER NE
+  のう: 'nō',
+  // HIRAGANA LETTER NO + U
+  の: 'no',
+  // HIRAGANA LETTER NO
+
+  ふぁ: 'fa',
+  // HIRAGANA LETTER HU + SMALL A
+  ふぃ: 'fi',
+  // HIRAGANA LETTER HU + SMALL I
+  // 'ふぅ': 'fu', // HIRAGANA LETTER HU + SMALL U
+  ふぇ: 'fe',
+  // HIRAGANA LETTER HU + SMALL E
+  ふぉ: 'fo',
+  // HIRAGANA LETTER HU + SMALL O
+  ふゅ: 'fyu',
+  // HIRAGANA LETTER HU + SMALL YU
+  ほぇ: 'hwe',
+  // HIRAGANA LETTER HO + SMALL E
+
+  は: 'ha',
+  // HIRAGANA LETTER HA
+  ひょう: 'hyō',
+  // HIRAGANA LETTER HI + SMALL YO + U
+  ひゅう: 'hyū',
+  // HIRAGANA LETTER HI + SMALL YU + U
+  ひゃ: 'hya',
+  // HIRAGANA LETTER HI + SMALL YA
+  ひょ: 'hyo',
+  // HIRAGANA LETTER HI + SMALL YO
+  ひゅ: 'hyu',
+  // HIRAGANA LETTER HI + SMALL YU
+  ひ: 'hi',
+  // HIRAGANA LETTER HI
+  ふう: 'fū',
+  // HIRAGANA LETTER HU + U
+  ふ: 'fu',
+  // HIRAGANA LETTER HU
+  へ: 'he',
+  // HIRAGANA LETTER HE
+  ほう: 'hō',
+  // HIRAGANA LETTER HO + U
+  ほ: 'ho',
+  // HIRAGANA LETTER HO
+
+  ま: 'ma',
+  // HIRAGANA LETTER MA
+  みょう: 'myō',
+  // HIRAGANA LETTER MI + SMALL YO + U
+  みゅう: 'myū',
+  // HIRAGANA LETTER MI + SMALL YU + U
+  みゃ: 'mya',
+  // HIRAGANA LETTER MI + SMALL YA
+  みょ: 'myo',
+  // HIRAGANA LETTER MI + SMALL YO
+  みゅ: 'myu',
+  // HIRAGANA LETTER MI + SMALL YU
+  み: 'mi',
+  // HIRAGANA LETTER MI
+  むう: 'mū',
+  // HIRAGANA LETTER MU + U
+  む: 'mu',
+  // HIRAGANA LETTER MU
+  め: 'me',
+  // HIRAGANA LETTER ME
+  もう: 'mō',
+  // HIRAGANA LETTER MO + U
+  も: 'mo',
+  // HIRAGANA LETTER MO
+
+  や: 'ya',
+  // HIRAGANA LETTER YA
+  ゆう: 'yū',
+  // HIRAGANA LETTER YU + U
+  ゆ: 'yu',
+  // HIRAGANA LETTER YU
+  よう: 'yō',
+  // HIRAGANA LETTER YO + U
+  よ: 'yo',
+  // HIRAGANA LETTER YO
+
+  りぇ: 'rye',
+  // HIRAGANA LETTER RI + SMALL E
+
+  ら: 'ra',
+  // HIRAGANA LETTER RA
+  りょう: 'ryō',
+  // HIRAGANA LETTER RI + SMALL YO + U
+  りゅう: 'ryū',
+  // HIRAGANA LETTER RI + SMALL YU + U
+  りゃ: 'rya',
+  // HIRAGANA LETTER RI + SMALL YA
+  りょ: 'ryo',
+  // HIRAGANA LETTER RI + SMALL YO
+  りゅ: 'ryu',
+  // HIRAGANA LETTER RI + SMALL YU
+  り: 'ri',
+  // HIRAGANA LETTER RI
+  るう: 'rū',
+  // HIRAGANA LETTER RU + U
+  る: 'ru',
+  // HIRAGANA LETTER RU
+  れ: 're',
+  // HIRAGANA LETTER RE
+  ろう: 'rō',
+  // HIRAGANA LETTER RO + U
+  ろ: 'ro',
+  // HIRAGANA LETTER RO
+
+  わ: 'wa',
+  // HIRAGANA LETTER WA
+  ゐ: 'i',
+  // HIRAGANA LETTER WI
+  ゑ: 'e',
+  // HIRAGANA LETTER WE
+  を: 'o',
+  // HIRAGANA LETTER WO
+
+  ん: 'n',
+  // HIRAGANA LETTER N
+
+  ぐぁ: 'gwa',
+  // HIRAGANA LETTER GU + SMALL A
+  ぐぃ: 'gwi',
+  // HIRAGANA LETTER GU + SMALL I
+  ぐぇ: 'gwe',
+  // HIRAGANA LETTER GU + SMALL E
+  ぐぉ: 'gwo',
+  // HIRAGANA LETTER GU + SMALL O
+
+  が: 'ga',
+  // HIRAGANA LETTER GA
+  ぎょう: 'gyō',
+  // HIRAGANA LETTER GI + SMALL YO + U
+  ぎゅう: 'gyū',
+  // HIRAGANA LETTER GI + SMALL YU + U
+  ぎゃ: 'gya',
+  // HIRAGANA LETTER GI + SMALL YA
+  ぎょ: 'gyo',
+  // HIRAGANA LETTER GI + SMALL YO
+  ぎゅ: 'gyu',
+  // HIRAGANA LETTER GI + SMALL YU
+  ぎ: 'gi',
+  // HIRAGANA LETTER GI
+  ぐう: 'gū',
+  // HIRAGANA LETTER GU + U
+  ぐ: 'gu',
+  // HIRAGANA LETTER GU
+  げ: 'ge',
+  // HIRAGANA LETTER GE
+  ごう: 'gō',
+  // HIRAGANA LETTER GO + U
+  ご: 'go',
+  // HIRAGANA LETTER GO
+
+  じぇ: 'je',
+  // HIRAGANA LETTER ZI + SMALL E
+  ずぃ: 'zi',
+  // HIRAGANA LETTER ZU + SMALL I
+
+  ざ: 'za',
+  // HIRAGANA LETTER ZA
+  じょう: 'jō',
+  // HIRAGANA LETTER ZI + SMALL YO + U
+  じゅう: 'jū',
+  // HIRAGANA LETTER ZI + SMALL YU + U
+  じゃ: 'ja',
+  // HIRAGANA LETTER ZI + SMALL YA
+  じょ: 'jo',
+  // HIRAGANA LETTER ZI + SMALL YO
+  じゅ: 'ju',
+  // HIRAGANA LETTER ZI + SMALL YU
+  じ: 'ji',
+  // HIRAGANA LETTER ZI
+  ずう: 'zū',
+  // HIRAGANA LETTER ZU + U
+  ず: 'zu',
+  // HIRAGANA LETTER ZU
+  ぜ: 'ze',
+  // HIRAGANA LETTER ZE
+  ぞう: 'zō',
+  // HIRAGANA LETTER ZO + U
+  ぞ: 'zo',
+  // HIRAGANA LETTER ZO
+
+  だ: 'da',
+  // HIRAGANA LETTER DA
+  ぢ: 'ji',
+  // HIRAGANA LETTER DI
+  づう: 'zū',
+  // HIRAGANA LETTER DU + U
+  づ: 'zu',
+  // HIRAGANA LETTER DU
+  で: 'de',
+  // HIRAGANA LETTER DE
+  どう: 'dō',
+  // HIRAGANA LETTER DO + U
+  ど: 'do',
+  // HIRAGANA LETTER DO
+
+  ぶゅ: 'byu',
+  // HIRAGANA LETTER BU + SMALL YU
+
+  ば: 'ba',
+  // HIRAGANA LETTER BA
+  びょう: 'byō',
+  // HIRAGANA LETTER BI + SMALL YO + U
+  びゅう: 'byū',
+  // HIRAGANA LETTER BI + SMALL YU + U
+  びゃ: 'bya',
+  // HIRAGANA LETTER BI + SMALL YA
+  びょ: 'byo',
+  // HIRAGANA LETTER BI + SMALL YO
+  びゅ: 'byu',
+  // HIRAGANA LETTER BI + SMALL YU
+  び: 'bi',
+  // HIRAGANA LETTER BI
+  ぶう: 'bū',
+  // HIRAGANA LETTER BU + U
+  ぶ: 'bu',
+  // HIRAGANA LETTER BU
+  べ: 'be',
+  // HIRAGANA LETTER BE
+  ぼう: 'bō',
+  // HIRAGANA LETTER BO + U
+  ぼ: 'bo',
+  // HIRAGANA LETTER BO
+
+  ぱ: 'pa',
+  // HIRAGANA LETTER PA
+  ぴょう: 'pyō',
+  // HIRAGANA LETTER PI + SMALL YO + U
+  ぴゅう: 'pyū',
+  // HIRAGANA LETTER PI + SMALL YU + U
+  ぴゃ: 'pya',
+  // HIRAGANA LETTER PI + SMALL YA
+  ぴょ: 'pyo',
+  // HIRAGANA LETTER PI + SMALL YO
+  ぴゅ: 'pyu',
+  // HIRAGANA LETTER PI + SMALL YU
+  ぴ: 'pi',
+  // HIRAGANA LETTER PI
+  ぷう: 'pū',
+  // HIRAGANA LETTER PU + U
+  ぷ: 'pu',
+  // HIRAGANA LETTER PU
+  ぺ: 'pe',
+  // HIRAGANA LETTER PE
+  ぽう: 'pō',
+  // HIRAGANA LETTER PO + U
+  ぽ: 'po',
+  // HIRAGANA LETTER PO
+
+  ゔ: 'v' // HIRAGANA LETTER VU
+};
+const transliterationTable3 = {
+  aァ: 'ā',
+  aぁ: 'ā',
+  iィー: 'ī',
+  iィ: 'ī',
+  iぃー: 'ī',
+  iぃ: 'ī',
+  aー: 'ā',
+  iー: 'ī',
+  uー: 'ū',
+  eー: 'ē',
+  oー: 'ō',
+  // Fallback for small vowels
+  ァ: 'a',
+  ィ: 'i',
+  ゥ: 'u',
+  ェ: 'e',
+  ォ: 'o',
+  ぁ: 'a',
+  ぃ: 'i',
+  ぅ: 'u',
+  ぇ: 'e',
+  ぉ: 'o'
+};
+const replace1 = replacer(transliterationTable1);
+const replace2 = replacer(transliterationTable2);
+const replace3 = replacer(transliterationTable3);
+module.exports = function (str) {
+  str = replace1(str);
+  str = str.replace(/ッ(?=[ン])/g, 'n') // KATAKANA LETTER SMALL TU
+  .replace(/っ(?=[ん])/g, 'n') // HIRAGANA LETTER SMALL TU
+  .replace(/ン(?=[バビブベボパピプペポマミムメモ])/g, 'm') // KATAKANA LETTER N
+  .replace(/ん(?=[ばびぶべぼぱぴぷぺぽまみむめも])/g, 'm') // HIRAGANA LETTER N
+  .replace(/ン(?=[ヤユヨアイウエオ])/g, "n'") // KATAKANA LETTER N
+  .replace(/ん(?=[やゆよあいうえお])/g, "n'"); // HIRAGANA LETTER N
+  str = str.replace(/ッ(?=[カキクケコ])/g, 'k') // KATAKANA LETTER SMALL TU
+  .replace(/っ(?=[かきくけこ])/g, 'k') // HIRAGANA LETTER SMALL TU
+  .replace(/ッ(?=[ガギグゲゴ])/g, 'g') // KATAKANA LETTER SMALL TU
+  .replace(/っ(?=[がぎぐげご])/g, 'g') // HIRAGANA LETTER SMALL TU
+  .replace(/ッ(?=[サシスセソ])/g, 's') // KATAKANA LETTER SMALL TU
+  .replace(/っ(?=[さしすせそ])/g, 's') // HIRAGANA LETTER SMALL TU
+  .replace(/ッ(?=[ザズゼゾ])/g, 'z') // KATAKANA LETTER SMALL TU
+  .replace(/っ(?=[ざずぜぞ])/g, 'z') // HIRAGANA LETTER SMALL TU
+  .replace(/ッ(?=[ジ])/g, 'j') // KATAKANA LETTER SMALL TU
+  .replace(/っ(?=[じ])/g, 'j') // HIRAGANA LETTER SMALL TU
+  .replace(/ッ(?=[タチツテト])/g, 't') // KATAKANA LETTER SMALL TU
+  .replace(/っ(?=[たちつてと])/g, 't') // HIRAGANA LETTER SMALL TU
+  .replace(/ッ(?=[ダヂヅデド])/g, 't') // KATAKANA LETTER SMALL TU
+  .replace(/っ(?=[だぢづでど])/g, 't') // HIRAGANA LETTER SMALL TU
+  .replace(/ッ(?=[ハヒヘホ])/g, 'h') // KATAKANA LETTER SMALL TU
+  .replace(/っ(?=[はひへほ])/g, 'h') // HIRAGANA LETTER SMALL TU
+  .replace(/ッ(?=[フ])/g, 'f') // KATAKANA LETTER SMALL TU
+  .replace(/っ(?=[ふ])/g, 'f') // HIRAGANA LETTER SMALL TU
+  .replace(/ッ(?=[バビブベボ])/g, 'b') // KATAKANA LETTER SMALL TU
+  .replace(/っ(?=[ばびぶべぼ])/g, 'b') // HIRAGANA LETTER SMALL TU
+  .replace(/ッ(?=[パピプペポ])/g, 'p') // KATAKANA LETTER SMALL TU
+  .replace(/っ(?=[ぱぴぷぺぽ])/g, 'p') // HIRAGANA LETTER SMALL TU
+  .replace(/ッ(?=[ラリルレロ])/g, 'r') // KATAKANA LETTER SMALL TU
+  .replace(/っ(?=[らりるれろ])/g, 'r'); // HIRAGANA LETTER SMALL TU
+
+  str = replace2(str);
+  str = replace3(str);
+  str = str.replace(/(ッ|っ)\B/g, 't'); // FINAL KATAKANA LETTER SMALL TU
+
+  return str;
+};
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJyZXBsYWNlciIsInJlcXVpcmUiLCJ0cmFuc2xpdGVyYXRpb25UYWJsZTEiLCLjgqbjgqEiLCLjgqbjgqMiLCLjgqbjgqciLCLjgqbjgqkiLCLjgqbjg7wiLCLjg7TjgqEiLCLjg7TjgqMiLCLjg7TjgqciLCLjg7TjgqkiLCLjg7Tjg6UiLCLjgYbjgYEiLCLjgYbjgYMiLCLjgYbjgYciLCLjgYbjgYkiLCLjgYbjg7wiLCLjgpTjgYEiLCLjgpTjgYMiLCLjgpTjgYciLCLjgpTjgYkiLCLjgpTjgoUiLCJ0cmFuc2xpdGVyYXRpb25UYWJsZTIiLCLjgqTjgqciLCLjgqIiLCLjgqQiLCLjgqbjgqYiLCLjgqYiLCLjgqgiLCLjgqrjgqYiLCLjgqoiLCLjgq/jgqEiLCLjgq/jgqMiLCLjgq/jgqciLCLjgq/jgqkiLCLjgqsiLCLjgq3jg6fjgqYiLCLjgq3jg6XjgqYiLCLjgq3jg6MiLCLjgq3jg6ciLCLjgq3jg6UiLCLjgq0iLCLjgq8iLCLjgrEiLCLjgrPjgqYiLCLjgrMiLCLjgrfjgqciLCLjgrnjgqMiLCLjgrUiLCLjgrfjg6fjgqYiLCLjgrfjg6XjgqYiLCLjgrfjg6MiLCLjgrfjg6ciLCLjgrfjg6UiLCLjgrciLCLjgrnjgqYiLCLjgrkiLCLjgrsiLCLjgr3jgqYiLCLjgr0iLCLjg4HjgqciLCLjg4TjgqEiLCLjg4TjgqMiLCLjg4TjgqciLCLjg4TjgqkiLCLjg4bjgqMiLCLjg4fjgqMiLCLjg4bjg6UiLCLjg4fjg6UiLCLjg4jjgqMiLCLjg4jjgqUiLCLjg4njgqMiLCLjg4njgqUiLCLjgr8iLCLjg4Hjg6fjgqYiLCLjg4Hjg6XjgqYiLCLjg4Hjg6MiLCLjg4Hjg6ciLCLjg4Hjg6UiLCLjg4EiLCLjg4TjgqYiLCLjg4QiLCLjg4YiLCLjg4jjgqYiLCLjg4giLCLjg4oiLCLjg4vjg6fjgqYiLCLjg4vjg6XjgqYiLCLjg4vjg6MiLCLjg4vjg6ciLCLjg4vjg6UiLCLjg4siLCLjg4zjgqYiLCLjg4wiLCLjg40iLCLjg47jgqYiLCLjg44iLCLjg5XjgqEiLCLjg5XjgqMiLCLjg5XjgqciLCLjg5XjgqkiLCLjg5Xjg6UiLCLjg5vjgqciLCLjg48iLCLjg5Ljg6fjgqYiLCLjg5Ljg6XjgqYiLCLjg5Ljg6MiLCLjg5Ljg6ciLCLjg5Ljg6UiLCLjg5IiLCLjg5XjgqYiLCLjg5UiLCLjg5giLCLjg5vjgqYiLCLjg5siLCLjg54iLCLjg5/jg6fjgqYiLCLjg5/jg6XjgqYiLCLjg5/jg6MiLCLjg5/jg6ciLCLjg5/jg6UiLCLjg58iLCLjg6DjgqYiLCLjg6AiLCLjg6EiLCLjg6LjgqYiLCLjg6IiLCLjg6QiLCLjg6bjgqYiLCLjg6YiLCLjg6jjgqYiLCLjg6giLCLjg6rjgqciLCLjg6kiLCLjg6rjg6fjgqYiLCLjg6rjg6XjgqYiLCLjg6rjg6MiLCLjg6rjg6ciLCLjg6rjg6UiLCLjg6oiLCLjg6vjgqYiLCLjg6siLCLjg6wiLCLjg63jgqYiLCLjg60iLCLjg68iLCLjg7AiLCLjg7EiLCLjg7IiLCLjg7MiLCLjgrDjgqEiLCLjgrDjgqMiLCLjgrDjgqciLCLjgrDjgqkiLCLjgqwiLCLjgq7jg6fjgqYiLCLjgq7jg6XjgqYiLCLjgq7jg6MiLCLjgq7jg6ciLCLjgq7jg6UiLCLjgq4iLCLjgrDjgqYiLCLjgrAiLCLjgrIiLCLjgrTjgqYiLCLjgrQiLCLjgrjjgqciLCLjgrrjgqMiLCLjgrYiLCLjgrjjg6fjgqYiLCLjgrjjg6XjgqYiLCLjgrjjg6MiLCLjgrjjg6ciLCLjgrjjg6UiLCLjgrgiLCLjgrrjgqYiLCLjgroiLCLjgrwiLCLjgr7jgqYiLCLjgr4iLCLjg4AiLCLjg4IiLCLjg4XjgqYiLCLjg4UiLCLjg4ciLCLjg4njgqYiLCLjg4kiLCLjg5bjg6UiLCLjg5AiLCLjg5Pjg6fjgqYiLCLjg5Pjg6XjgqYiLCLjg5Pjg6MiLCLjg5Pjg6ciLCLjg5Pjg6UiLCLjg5MiLCLjg5bjgqYiLCLjg5YiLCLjg5kiLCLjg5zjgqYiLCLjg5wiLCLjg5EiLCLjg5Tjg6fjgqYiLCLjg5Tjg6XjgqYiLCLjg5Tjg6MiLCLjg5Tjg6ciLCLjg5Tjg6UiLCLjg5QiLCLjg5fjgqYiLCLjg5ciLCLjg5oiLCLjg53jgqYiLCLjg50iLCLjg7QiLCLjgYTjgYciLCLjgYIiLCLjgYQiLCLjgYbjgYYiLCLjgYYiLCLjgYgiLCLjgYrjgYYiLCLjgYoiLCLjgY/jgYEiLCLjgY/jgYMiLCLjgY/jgYciLCLjgY/jgYkiLCLjgYsiLCLjgY3jgofjgYYiLCLjgY3jgoXjgYYiLCLjgY3jgoMiLCLjgY3jgociLCLjgY3jgoUiLCLjgY0iLCLjgY/jgYYiLCLjgY8iLCLjgZEiLCLjgZPjgYYiLCLjgZMiLCLjgZfjgYciLCLjgZnjgYMiLCLjgZUiLCLjgZfjgofjgYYiLCLjgZfjgoXjgYYiLCLjgZfjgoMiLCLjgZfjgociLCLjgZfjgoUiLCLjgZciLCLjgZnjgYYiLCLjgZkiLCLjgZsiLCLjgZ3jgYYiLCLjgZ0iLCLjgaHjgYciLCLjgaTjgYEiLCLjgaTjgYMiLCLjgaTjgYciLCLjgaTjgYkiLCLjgabjgYMiLCLjgafjgYMiLCLjgabjgoUiLCLjgafjgoUiLCLjgajjgYMiLCLjgajjgYUiLCLjganjgYMiLCLjganjgYUiLCLjgZ8iLCLjgaHjgofjgYYiLCLjgaHjgoXjgYYiLCLjgaHjgoMiLCLjgaHjgociLCLjgaHjgoUiLCLjgaEiLCLjgaTjgYYiLCLjgaQiLCLjgaYiLCLjgajjgYYiLCLjgagiLCLjgaoiLCLjgavjgofjgYYiLCLjgavjgoXjgYYiLCLjgavjgoMiLCLjgavjgociLCLjgavjgoUiLCLjgasiLCLjgazjgYYiLCLjgawiLCLjga0iLCLjga7jgYYiLCLjga4iLCLjgbXjgYEiLCLjgbXjgYMiLCLjgbXjgYciLCLjgbXjgYkiLCLjgbXjgoUiLCLjgbvjgYciLCLjga8iLCLjgbLjgofjgYYiLCLjgbLjgoXjgYYiLCLjgbLjgoMiLCLjgbLjgociLCLjgbLjgoUiLCLjgbIiLCLjgbXjgYYiLCLjgbUiLCLjgbgiLCLjgbvjgYYiLCLjgbsiLCLjgb4iLCLjgb/jgofjgYYiLCLjgb/jgoXjgYYiLCLjgb/jgoMiLCLjgb/jgociLCLjgb/jgoUiLCLjgb8iLCLjgoDjgYYiLCLjgoAiLCLjgoEiLCLjgoLjgYYiLCLjgoIiLCLjgoQiLCLjgobjgYYiLCLjgoYiLCLjgojjgYYiLCLjgogiLCLjgorjgYciLCLjgokiLCLjgorjgofjgYYiLCLjgorjgoXjgYYiLCLjgorjgoMiLCLjgorjgociLCLjgorjgoUiLCLjgooiLCLjgovjgYYiLCLjgosiLCLjgowiLCLjgo3jgYYiLCLjgo0iLCLjgo8iLCLjgpAiLCLjgpEiLCLjgpIiLCLjgpMiLCLjgZDjgYEiLCLjgZDjgYMiLCLjgZDjgYciLCLjgZDjgYkiLCLjgYwiLCLjgY7jgofjgYYiLCLjgY7jgoXjgYYiLCLjgY7jgoMiLCLjgY7jgociLCLjgY7jgoUiLCLjgY4iLCLjgZDjgYYiLCLjgZAiLCLjgZIiLCLjgZTjgYYiLCLjgZQiLCLjgZjjgYciLCLjgZrjgYMiLCLjgZYiLCLjgZjjgofjgYYiLCLjgZjjgoXjgYYiLCLjgZjjgoMiLCLjgZjjgociLCLjgZjjgoUiLCLjgZgiLCLjgZrjgYYiLCLjgZoiLCLjgZwiLCLjgZ7jgYYiLCLjgZ4iLCLjgaAiLCLjgaIiLCLjgaXjgYYiLCLjgaUiLCLjgaciLCLjganjgYYiLCLjgakiLCLjgbbjgoUiLCLjgbAiLCLjgbPjgofjgYYiLCLjgbPjgoXjgYYiLCLjgbPjgoMiLCLjgbPjgociLCLjgbPjgoUiLCLjgbMiLCLjgbbjgYYiLCLjgbYiLCLjgbkiLCLjgbzjgYYiLCLjgbwiLCLjgbEiLCLjgbTjgofjgYYiLCLjgbTjgoXjgYYiLCLjgbTjgoMiLCLjgbTjgociLCLjgbTjgoUiLCLjgbQiLCLjgbfjgYYiLCLjgbciLCLjgboiLCLjgb3jgYYiLCLjgb0iLCLjgpQiLCJ0cmFuc2xpdGVyYXRpb25UYWJsZTMiLCJh44KhIiwiYeOBgSIsImnjgqPjg7wiLCJp44KjIiwiaeOBg+ODvCIsImnjgYMiLCJh44O8IiwiaeODvCIsInXjg7wiLCJl44O8Iiwib+ODvCIsIuOCoSIsIuOCoyIsIuOCpSIsIuOCpyIsIuOCqSIsIuOBgSIsIuOBgyIsIuOBhSIsIuOBhyIsIuOBiSIsInJlcGxhY2UxIiwicmVwbGFjZTIiLCJyZXBsYWNlMyIsIm1vZHVsZSIsImV4cG9ydHMiLCJzdHIiLCJyZXBsYWNlIl0sInNvdXJjZXMiOlsiaW5kZXguanMiXSwic291cmNlc0NvbnRlbnQiOlsiLypcbkNvcHlyaWdodCAoYykgMjAxMiwgR3VpbGxhdW1lIE1hcnR5XG5cblBlcm1pc3Npb24gaXMgaGVyZWJ5IGdyYW50ZWQsIGZyZWUgb2YgY2hhcmdlLCB0byBhbnkgcGVyc29uIG9idGFpbmluZyBhIGNvcHlcbm9mIHRoaXMgc29mdHdhcmUgYW5kIGFzc29jaWF0ZWQgZG9jdW1lbnRhdGlvbiBmaWxlcyAodGhlIFwiU29mdHdhcmVcIiksIHRvIGRlYWxcbmluIHRoZSBTb2Z0d2FyZSB3aXRob3V0IHJlc3RyaWN0aW9uLCBpbmNsdWRpbmcgd2l0aG91dCBsaW1pdGF0aW9uIHRoZSByaWdodHNcbnRvIHVzZSwgY29weSwgbW9kaWZ5LCBtZXJnZSwgcHVibGlzaCwgZGlzdHJpYnV0ZSwgc3VibGljZW5zZSwgYW5kL29yIHNlbGxcbmNvcGllcyBvZiB0aGUgU29mdHdhcmUsIGFuZCB0byBwZXJtaXQgcGVyc29ucyB0byB3aG9tIHRoZSBTb2Z0d2FyZSBpc1xuZnVybmlzaGVkIHRvIGRvIHNvLCBzdWJqZWN0IHRvIHRoZSBmb2xsb3dpbmcgY29uZGl0aW9uczpcblxuVGhlIGFib3ZlIGNvcHlyaWdodCBub3RpY2UgYW5kIHRoaXMgcGVybWlzc2lvbiBub3RpY2Ugc2hhbGwgYmUgaW5jbHVkZWQgaW5cbmFsbCBjb3BpZXMgb3Igc3Vic3RhbnRpYWwgcG9ydGlvbnMgb2YgdGhlIFNvZnR3YXJlLlxuXG5USEUgU09GVFdBUkUgSVMgUFJPVklERUQgXCJBUyBJU1wiLCBXSVRIT1VUIFdBUlJBTlRZIE9GIEFOWSBLSU5ELCBFWFBSRVNTIE9SXG5JTVBMSUVELCBJTkNMVURJTkcgQlVUIE5PVCBMSU1JVEVEIFRPIFRIRSBXQVJSQU5USUVTIE9GIE1FUkNIQU5UQUJJTElUWSxcbkZJVE5FU1MgRk9SIEEgUEFSVElDVUxBUiBQVVJQT1NFIEFORCBOT05JTkZSSU5HRU1FTlQuIElOIE5PIEVWRU5UIFNIQUxMIFRIRVxuQVVUSE9SUyBPUiBDT1BZUklHSFQgSE9MREVSUyBCRSBMSUFCTEUgRk9SIEFOWSBDTEFJTSwgREFNQUdFUyBPUiBPVEhFUlxuTElBQklMSVRZLCBXSEVUSEVSIElOIEFOIEFDVElPTiBPRiBDT05UUkFDVCwgVE9SVCBPUiBPVEhFUldJU0UsIEFSSVNJTkcgRlJPTSxcbk9VVCBPRiBPUiBJTiBDT05ORUNUSU9OIFdJVEggVEhFIFNPRlRXQVJFIE9SIFRIRSBVU0UgT1IgT1RIRVIgREVBTElOR1MgSU5cblRIRSBTT0ZUV0FSRS5cbiovXG5cbid1c2Ugc3RyaWN0J1xuXG4vKipcbiAqIEEgdHJhbnNsaXRlcmF0aW9uIG9mIEthdGFrYW5hICYgSGlyYWdhbmEgdG8gcm9tYW4gY2hhcmFjdGVycyB1c2luZyB0aGVcbiAqIG1vZGlmaWVkIEhlcGJ1cm4gc3lzdGVtLlxuICogUnVsZXMgYmFzZWQgb24gQ0xEUiB0cmFuc2Zvcm0gcnVsZSBzZXQgYEthdGFrYW5hLUxhdGluLUJHTi54bWxgIGJ1dCB3aXRoXG4gKiBzZXZlcmFsIGJ1Z3MgZml4ZWQ6XG4gKiAgKiBNaXNzaW5nIMWrXG4gKiAgKiBNaXNzaW5nIHRzdSArIHZvaWNlZCBrYW5hXG4gKiAgKiB0eXBvcyBvbiBteX4gdHJhbnNsaXRlcmF0aW9uc1xuICogICogc3VwcG9ydCBmb3IgbG9uZyB2b3dlbCBzaWduXG4gKiAgKiBzdXBwb3J0IGZvciBmaW5hbCBzbWFsbCB0c3VcbiAqICAqIHN1cHBvcnQgZm9yIHUgKyBzbWFsbCB2b3dlbHNcbiAqICAqIHN1cHBvcnQgZm9yIHN1L3NoaS9qaSArIHNtYWxsIHZvd2Vsc1xuICogICogc3VwcG9ydCBmb3IgdGNoaS90c3UvdGUvdG8gKyBzbWFsbCB2b3dlbHNcbiAqICAqIHN1cHBvcnQgZm9yIGZ1ICsgc21hbGwgdm93ZWxzXG4gKiAgKiBzdXBwb3J0IGZvciBrYXRha2FuYSBtaWRkbGUgZG90XG4gKlxuICogXFxAdG9kbyBUYWtlIGl0ZXJhdGlvbiBtYXJrcyBpbnRvIGFjY291bnQuXG4gKi9cblxuY29uc3QgcmVwbGFjZXIgPSByZXF1aXJlKCcuLi8uLi91dGlsL3V0aWxzJykucmVwbGFjZXJcblxuY29uc3QgdHJhbnNsaXRlcmF0aW9uVGFibGUxID0ge1xuICDjgqbjgqE6ICd3YScsIC8vIEtBVEFLQU5BIExFVFRFUiBVICsgU01BTEwgQVxuICDjgqbjgqM6ICd3aScsIC8vIEtBVEFLQU5BIExFVFRFUiBVICsgU01BTEwgSVxuICDjgqbjgqc6ICd3ZScsIC8vIEtBVEFLQU5BIExFVFRFUiBVICsgU01BTEwgRVxuICDjgqbjgqk6ICd3bycsIC8vIEtBVEFLQU5BIExFVFRFUiBVICsgU01BTEwgT1xuICDjgqbjg7w6ICfFqycsIC8vIEtBVEFLQU5BIExFVFRFUiBWVSArIFBST0xPTkdFRCBTT1VORCBNQVJLXG5cbiAg44O044KhOiAndmEnLCAvLyBLQVRBS0FOQSBMRVRURVIgVlUgKyBTTUFMTCBBXG4gIOODtOOCozogJ3ZpJywgLy8gS0FUQUtBTkEgTEVUVEVSIFZVICsgU01BTEwgSVxuICDjg7Tjgqc6ICd2ZScsIC8vIEtBVEFLQU5BIExFVFRFUiBWVSArIFNNQUxMIEVcbiAg44O044KpOiAndm8nLCAvLyBLQVRBS0FOQSBMRVRURVIgVlUgKyBTTUFMTCBPXG4gIOODtOODpTogJ3Z5dScsIC8vIEtBVEFLQU5BIExFVFRFUiBWVSArIFNNQUxMIFlVXG5cbiAg44GG44GBOiAnd2EnLCAvLyBISVJBR0FOQSBMRVRURVIgVSArIFNNQUxMIEFcbiAg44GG44GDOiAnd2knLCAvLyBISVJBR0FOQSBMRVRURVIgVSArIFNNQUxMIElcbiAg44GG44GHOiAnd2UnLCAvLyBISVJBR0FOQSBMRVRURVIgVSArIFNNQUxMIEVcbiAg44GG44GJOiAnd28nLCAvLyBISVJBR0FOQSBMRVRURVIgVSArIFNNQUxMIE9cbiAg44GG44O8OiAnxasnLCAvLyBISVJBR0FOQSBMRVRURVIgVlUgKyBQUk9MT05HRUQgU09VTkQgTUFSS1xuXG4gIOOClOOBgTogJ3ZhJywgLy8gSElSQUdBTkEgTEVUVEVSIFZVICsgU01BTEwgQVxuICDjgpTjgYM6ICd2aScsIC8vIEhJUkFHQU5BIExFVFRFUiBWVSArIFNNQUxMIElcbiAg44KU44GHOiAndmUnLCAvLyBISVJBR0FOQSBMRVRURVIgVlUgKyBTTUFMTCBFXG4gIOOClOOBiTogJ3ZvJywgLy8gSElSQUdBTkEgTEVUVEVSIFZVICsgU01BTEwgT1xuICDjgpTjgoU6ICd2eXUnIC8vIEhJUkFHQU5BIExFVFRFUiBWVSArIFNNQUxMIFlVXG59XG5cbmNvbnN0IHRyYW5zbGl0ZXJhdGlvblRhYmxlMiA9IHtcbiAg44Kk44KnOiAneWUnLCAvLyBLQVRBS0FOQSBMRVRURVIgSSArIFNNQUxMIEVcblxuICDjgqI6ICdhJywgLy8gS0FUQUtBTkEgTEVUVEVSIEFcbiAg44KkOiAnaScsIC8vIEtBVEFLQU5BIExFVFRFUiBJXG4gIOOCpuOCpjogJ8WrJywgLy8gS0FUQUtBTkEgTEVUVEVSIFUgKyBVXG4gIOOCpjogJ3UnLCAvLyBLQVRBS0FOQSBMRVRURVIgVVxuICDjgqg6ICdlJywgLy8gS0FUQUtBTkEgTEVUVEVSIEVcbiAg44Kq44KmOiAnxY0nLCAvLyBLQVRBS0FOQSBMRVRURVIgTyArIFVcbiAg44KqOiAnbycsIC8vIEtBVEFLQU5BIExFVFRFUiBPXG5cbiAg44Kv44KhOiAna3dhJywgLy8gS0FUQUtBTkEgTEVUVEVSIEtVICsgU01BTEwgQVxuICDjgq/jgqM6ICdrd2knLCAvLyBLQVRBS0FOQSBMRVRURVIgS1UgKyBTTUFMTCBJXG4gIOOCr+OCpzogJ2t3ZScsIC8vIEtBVEFLQU5BIExFVFRFUiBLVSArIFNNQUxMIEVcbiAg44Kv44KpOiAna3dvJywgLy8gS0FUQUtBTkEgTEVUVEVSIEtVICsgU01BTEwgT1xuXG4gIOOCqzogJ2thJywgLy8gS0FUQUtBTkEgTEVUVEVSIEtBXG4gIOOCreODp+OCpjogJ2t5xY0nLCAvLyBLQVRBS0FOQSBMRVRURVIgS0kgKyBTTUFMTCBZTyArIFVcbiAg44Kt44Ol44KmOiAna3nFqycsIC8vIEtBVEFLQU5BIExFVFRFUiBLSSArIFNNQUxMIFlVICsgVVxuICDjgq3jg6M6ICdreWEnLCAvLyBLQVRBS0FOQSBMRVRURVIgS0kgKyBTTUFMTCBZQVxuICDjgq3jg6c6ICdreW8nLCAvLyBLQVRBS0FOQSBMRVRURVIgS0kgKyBTTUFMTCBZT1xuICDjgq3jg6U6ICdreXUnLCAvLyBLQVRBS0FOQSBMRVRURVIgS0kgKyBTTUFMTCBZVVxuICDjgq06ICdraScsIC8vIEtBVEFLQU5BIExFVFRFUiBLSVxuICDjgq86ICdrdScsIC8vIEtBVEFLQU5BIExFVFRFUiBLVVxuICDjgrE6ICdrZScsIC8vIEtBVEFLQU5BIExFVFRFUiBLRVxuICDjgrPjgqY6ICdrxY0nLCAvLyBLQVRBS0FOQSBMRVRURVIgS08gKyBVXG4gIOOCszogJ2tvJywgLy8gS0FUQUtBTkEgTEVUVEVSIEtPXG5cbiAg44K344KnOiAnc2hlJywgLy8gS0FUQUtBTkEgTEVUVEVSIFNJICsgU01BTEwgRVxuICDjgrnjgqM6ICdzaScsIC8vIEtBVEFLQU5BIExFVFRFUiBTVSArIFNNQUxMIElcblxuICDjgrU6ICdzYScsIC8vIEtBVEFLQU5BIExFVFRFUiBTQVxuICDjgrfjg6fjgqY6ICdzaMWNJywgLy8gS0FUQUtBTkEgTEVUVEVSIFNJICsgU01BTEwgWU8gKyBVXG4gIOOCt+ODpeOCpjogJ3NoxasnLCAvLyBLQVRBS0FOQSBMRVRURVIgU0kgKyBTTUFMTCBZVSArIFVcbiAg44K344OjOiAnc2hhJywgLy8gS0FUQUtBTkEgTEVUVEVSIFNJICsgU01BTEwgWUFcbiAg44K344OnOiAnc2hvJywgLy8gS0FUQUtBTkEgTEVUVEVSIFNJICsgU01BTEwgWU9cbiAg44K344OlOiAnc2h1JywgLy8gS0FUQUtBTkEgTEVUVEVSIFNJICsgU01BTEwgWVVcbiAg44K3OiAnc2hpJywgLy8gS0FUQUtBTkEgTEVUVEVSIFNJXG4gIOOCueOCpjogJ3PFqycsIC8vIEtBVEFLQU5BIExFVFRFUiBTVSArIFVcbiAg44K5OiAnc3UnLCAvLyBLQVRBS0FOQSBMRVRURVIgU1VcbiAg44K7OiAnc2UnLCAvLyBLQVRBS0FOQSBMRVRURVIgU0VcbiAg44K944KmOiAnc8WNJywgLy8gS0FUQUtBTkEgTEVUVEVSIFNPICsgVVxuICDjgr06ICdzbycsIC8vIEtBVEFLQU5BIExFVFRFUiBTT1xuXG4gIOODgeOCpzogJ2NoZScsIC8vIEtBVEFLQU5BIExFVFRFUiBUSSArIFNNQUxMIEVcbiAg44OE44KhOiAndHNhJywgLy8gS0FUQUtBTkEgTEVUVEVSIFRVICsgU01BTEwgQVxuICDjg4TjgqM6ICd0c2knLCAvLyBLQVRBS0FOQSBMRVRURVIgVFUgKyBTTUFMTCBJXG4gIOODhOOCpzogJ3RzZScsIC8vIEtBVEFLQU5BIExFVFRFUiBUVSArIFNNQUxMIEVcbiAg44OE44KpOiAndHNvJywgLy8gS0FUQUtBTkEgTEVUVEVSIFRVICsgU01BTEwgT1xuICDjg4bjgqM6ICd0aScsIC8vIEtBVEFLQU5BIExFVFRFUiBURSArIFNNQUxMIElcbiAg44OH44KjOiAnZGknLCAvLyBLQVRBS0FOQSBMRVRURVIgREUgKyBTTUFMTCBJXG4gIOODhuODpTogJ3R5dScsIC8vIEtBVEFLQU5BIExFVFRFUiBURSArIFNNQUxMIFlVXG4gIOODh+ODpTogJ2R5dScsIC8vIEtBVEFLQU5BIExFVFRFUiBERSArIFNNQUxMIFlVXG4gIOODiOOCozogJ3R3aScsIC8vIEtBVEFLQU5BIExFVFRFUiBUTyArIFNNQUxMIElcbiAg44OI44KlOiAndHUnLCAvLyBLQVRBS0FOQSBMRVRURVIgVE8gKyBTTUFMTCBVXG4gIOODieOCozogJ2R3aScsIC8vIEtBVEFLQU5BIExFVFRFUiBETyArIFNNQUxMIElcbiAg44OJ44KlOiAnZHUnLCAvLyBLQVRBS0FOQSBMRVRURVIgRE8gKyBTTUFMTCBVXG5cbiAg44K/OiAndGEnLCAvLyBLQVRBS0FOQSBMRVRURVIgVEFcbiAg44OB44On44KmOiAnY2jFjScsIC8vIEtBVEFLQU5BIExFVFRFUiBUSSArIFNNQUxMIFlPICsgVVxuICDjg4Hjg6XjgqY6ICdjaMWrJywgLy8gS0FUQUtBTkEgTEVUVEVSIFRJICsgU01BTEwgWVUgKyBVXG4gIOODgeODozogJ2NoYScsIC8vIEtBVEFLQU5BIExFVFRFUiBUSSArIFNNQUxMIFlBXG4gIOODgeODpzogJ2NobycsIC8vIEtBVEFLQU5BIExFVFRFUiBUSSArIFNNQUxMIFlPXG4gIOODgeODpTogJ2NodScsIC8vIEtBVEFLQU5BIExFVFRFUiBUSSArIFNNQUxMIFlVXG4gIOODgTogJ2NoaScsIC8vIEtBVEFLQU5BIExFVFRFUiBUSVxuICDjg4TjgqY6ICd0c8WrJywgLy8gS0FUQUtBTkEgTEVUVEVSIFRVICsgVVxuICDjg4Q6ICd0c3UnLCAvLyBLQVRBS0FOQSBMRVRURVIgVFVcbiAg44OGOiAndGUnLCAvLyBLQVRBS0FOQSBMRVRURVIgVEVcbiAg44OI44KmOiAndMWNJywgLy8gS0FUQUtBTkEgTEVUVEVSIFRPICsgVVxuICDjg4g6ICd0bycsIC8vIEtBVEFLQU5BIExFVFRFUiBUT1xuXG4gIOODijogJ25hJywgLy8gS0FUQUtBTkEgTEVUVEVSIE5BXG4gIOODi+ODp+OCpjogJ255xY0nLCAvLyBLQVRBS0FOQSBMRVRURVIgTkkgKyBTTUFMTCBZTyArIFVcbiAg44OL44Ol44KmOiAnbnnFqycsIC8vIEtBVEFLQU5BIExFVFRFUiBOSSArIFNNQUxMIFlVICsgVVxuICDjg4vjg6M6ICdueWEnLCAvLyBLQVRBS0FOQSBMRVRURVIgTkkgKyBTTUFMTCBZQVxuICDjg4vjg6c6ICdueW8nLCAvLyBLQVRBS0FOQSBMRVRURVIgTkkgKyBTTUFMTCBZT1xuICDjg4vjg6U6ICdueXUnLCAvLyBLQVRBS0FOQSBMRVRURVIgTkkgKyBTTUFMTCBZVVxuICDjg4s6ICduaScsIC8vIEtBVEFLQU5BIExFVFRFUiBOSVxuICDjg4zjgqY6ICduxasnLCAvLyBLQVRBS0FOQSBMRVRURVIgTlUgKyBVXG4gIOODjDogJ251JywgLy8gS0FUQUtBTkEgTEVUVEVSIE5VXG4gIOODjTogJ25lJywgLy8gS0FUQUtBTkEgTEVUVEVSIE5FXG4gIOODjuOCpjogJ27FjScsIC8vIEtBVEFLQU5BIExFVFRFUiBOTyArIFVcbiAg44OOOiAnbm8nLCAvLyBLQVRBS0FOQSBMRVRURVIgTk9cblxuICDjg5XjgqE6ICdmYScsIC8vIEtBVEFLQU5BIExFVFRFUiBIVSArIFNNQUxMIEFcbiAg44OV44KjOiAnZmknLCAvLyBLQVRBS0FOQSBMRVRURVIgSFUgKyBTTUFMTCBJXG4gIC8vICfjg5XjgqUnOiAnZnUnLCAvLyBLQVRBS0FOQSBMRVRURVIgSFUgKyBTTUFMTCBVXG4gIOODleOCpzogJ2ZlJywgLy8gS0FUQUtBTkEgTEVUVEVSIEhVICsgU01BTEwgRVxuICDjg5Xjgqk6ICdmbycsIC8vIEtBVEFLQU5BIExFVFRFUiBIVSArIFNNQUxMIE9cbiAg44OV44OlOiAnZnl1JywgLy8gS0FUQUtBTkEgTEVUVEVSIEhVICsgU01BTEwgWVVcbiAg44Ob44KnOiAnaHdlJywgLy8gS0FUQUtBTkEgTEVUVEVSIEhPICsgU01BTEwgRVxuXG4gIOODjzogJ2hhJywgLy8gS0FUQUtBTkEgTEVUVEVSIEhBXG4gIOODkuODp+OCpjogJ2h5xY0nLCAvLyBLQVRBS0FOQSBMRVRURVIgSEkgKyBTTUFMTCBZTyArIFVcbiAg44OS44Ol44KmOiAnaHnFqycsIC8vIEtBVEFLQU5BIExFVFRFUiBISSArIFNNQUxMIFlVICsgVVxuICDjg5Ljg6M6ICdoeWEnLCAvLyBLQVRBS0FOQSBMRVRURVIgSEkgKyBTTUFMTCBZQVxuICDjg5Ljg6c6ICdoeW8nLCAvLyBLQVRBS0FOQSBMRVRURVIgSEkgKyBTTUFMTCBZT1xuICDjg5Ljg6U6ICdoeXUnLCAvLyBLQVRBS0FOQSBMRVRURVIgSEkgKyBTTUFMTCBZVVxuICDjg5I6ICdoaScsIC8vIEtBVEFLQU5BIExFVFRFUiBISVxuICDjg5XjgqY6ICdmxasnLCAvLyBLQVRBS0FOQSBMRVRURVIgSFUgKyBVXG4gIOODlTogJ2Z1JywgLy8gS0FUQUtBTkEgTEVUVEVSIEhVXG4gIOODmDogJ2hlJywgLy8gS0FUQUtBTkEgTEVUVEVSIEhFXG4gIOODm+OCpjogJ2jFjScsIC8vIEtBVEFLQU5BIExFVFRFUiBITyArIFVcbiAg44ObOiAnaG8nLCAvLyBLQVRBS0FOQSBMRVRURVIgSE9cblxuICDjg546ICdtYScsIC8vIEtBVEFLQU5BIExFVFRFUiBNQVxuICDjg5/jg6fjgqY6ICdtecWNJywgLy8gS0FUQUtBTkEgTEVUVEVSIE1JICsgU01BTEwgWU8gKyBVXG4gIOODn+ODpeOCpjogJ215xasnLCAvLyBLQVRBS0FOQSBMRVRURVIgTUkgKyBTTUFMTCBZVSArIFVcbiAg44Of44OjOiAnbXlhJywgLy8gS0FUQUtBTkEgTEVUVEVSIE1JICsgU01BTEwgWUFcbiAg44Of44OnOiAnbXlvJywgLy8gS0FUQUtBTkEgTEVUVEVSIE1JICsgU01BTEwgWU9cbiAg44Of44OlOiAnbXl1JywgLy8gS0FUQUtBTkEgTEVUVEVSIE1JICsgU01BTEwgWVVcbiAg44OfOiAnbWknLCAvLyBLQVRBS0FOQSBMRVRURVIgTUlcbiAg44Og44KmOiAnbcWrJywgLy8gS0FUQUtBTkEgTEVUVEVSIE1VICsgVVxuICDjg6A6ICdtdScsIC8vIEtBVEFLQU5BIExFVFRFUiBNVVxuICDjg6E6ICdtZScsIC8vIEtBVEFLQU5BIExFVFRFUiBNRVxuICDjg6LjgqY6ICdtxY0nLCAvLyBLQVRBS0FOQSBMRVRURVIgTU8gKyBVXG4gIOODojogJ21vJywgLy8gS0FUQUtBTkEgTEVUVEVSIE1PXG5cbiAg44OkOiAneWEnLCAvLyBLQVRBS0FOQSBMRVRURVIgWUFcbiAg44Om44KmOiAnecWrJywgLy8gS0FUQUtBTkEgTEVUVEVSIFlVICsgVVxuICDjg6Y6ICd5dScsIC8vIEtBVEFLQU5BIExFVFRFUiBZVVxuICDjg6jjgqY6ICd5xY0nLCAvLyBLQVRBS0FOQSBMRVRURVIgWU8gKyBVXG4gIOODqDogJ3lvJywgLy8gS0FUQUtBTkEgTEVUVEVSIFlPXG5cbiAg44Oq44KnOiAncnllJywgLy8gS0FUQUtBTkEgTEVUVEVSIFJJICsgU01BTEwgRVxuXG4gIOODqTogJ3JhJywgLy8gS0FUQUtBTkEgTEVUVEVSIFJBXG4gIOODquODp+OCpjogJ3J5xY0nLCAvLyBLQVRBS0FOQSBMRVRURVIgUkkgKyBTTUFMTCBZTyArIFVcbiAg44Oq44Ol44KmOiAncnnFqycsIC8vIEtBVEFLQU5BIExFVFRFUiBSSSArIFNNQUxMIFlVICsgVVxuICDjg6rjg6M6ICdyeWEnLCAvLyBLQVRBS0FOQSBMRVRURVIgUkkgKyBTTUFMTCBZQVxuICDjg6rjg6c6ICdyeW8nLCAvLyBLQVRBS0FOQSBMRVRURVIgUkkgKyBTTUFMTCBZT1xuICDjg6rjg6U6ICdyeXUnLCAvLyBLQVRBS0FOQSBMRVRURVIgUkkgKyBTTUFMTCBZVVxuICDjg6o6ICdyaScsIC8vIEtBVEFLQU5BIExFVFRFUiBSSVxuICDjg6vjgqY6ICdyxasnLCAvLyBLQVRBS0FOQSBMRVRURVIgUlUgKyBVXG4gIOODqzogJ3J1JywgLy8gS0FUQUtBTkEgTEVUVEVSIFJVXG4gIOODrDogJ3JlJywgLy8gS0FUQUtBTkEgTEVUVEVSIFJFXG4gIOODreOCpjogJ3LFjScsIC8vIEtBVEFLQU5BIExFVFRFUiBSTyArIFVcbiAg44OtOiAncm8nLCAvLyBLQVRBS0FOQSBMRVRURVIgUk9cblxuICDjg686ICd3YScsIC8vIEtBVEFLQU5BIExFVFRFUiBXQVxuICDjg7A6ICdpJywgLy8gS0FUQUtBTkEgTEVUVEVSIFdJXG4gIOODsTogJ2UnLCAvLyBLQVRBS0FOQSBMRVRURVIgV0VcbiAg44OyOiAnbycsIC8vIEtBVEFLQU5BIExFVFRFUiBXT1xuXG4gIOODszogJ24nLCAvLyBLQVRBS0FOQSBMRVRURVIgTlxuXG4gIOOCsOOCoTogJ2d3YScsIC8vIEtBVEFLQU5BIExFVFRFUiBHVSArIFNNQUxMIEFcbiAg44Kw44KjOiAnZ3dpJywgLy8gS0FUQUtBTkEgTEVUVEVSIEdVICsgU01BTEwgSVxuICDjgrDjgqc6ICdnd2UnLCAvLyBLQVRBS0FOQSBMRVRURVIgR1UgKyBTTUFMTCBFXG4gIOOCsOOCqTogJ2d3bycsIC8vIEtBVEFLQU5BIExFVFRFUiBHVSArIFNNQUxMIE9cblxuICDjgqw6ICdnYScsIC8vIEtBVEFLQU5BIExFVFRFUiBHQVxuICDjgq7jg6fjgqY6ICdnecWNJywgLy8gS0FUQUtBTkEgTEVUVEVSIEdJICsgU01BTEwgWU8gKyBVXG4gIOOCruODpeOCpjogJ2d5xasnLCAvLyBLQVRBS0FOQSBMRVRURVIgR0kgKyBTTUFMTCBZVSArIFVcbiAg44Ku44OjOiAnZ3lhJywgLy8gS0FUQUtBTkEgTEVUVEVSIEdJICsgU01BTEwgWUFcbiAg44Ku44OnOiAnZ3lvJywgLy8gS0FUQUtBTkEgTEVUVEVSIEdJICsgU01BTEwgWU9cbiAg44Ku44OlOiAnZ3l1JywgLy8gS0FUQUtBTkEgTEVUVEVSIEdJICsgU01BTEwgWVVcbiAg44KuOiAnZ2knLCAvLyBLQVRBS0FOQSBMRVRURVIgR0lcbiAg44Kw44KmOiAnZ8WrJywgLy8gS0FUQUtBTkEgTEVUVEVSIEdVICsgVVxuICDjgrA6ICdndScsIC8vIEtBVEFLQU5BIExFVFRFUiBHVVxuICDjgrI6ICdnZScsIC8vIEtBVEFLQU5BIExFVFRFUiBHRVxuICDjgrTjgqY6ICdnxY0nLCAvLyBLQVRBS0FOQSBMRVRURVIgR08gKyBVXG4gIOOCtDogJ2dvJywgLy8gS0FUQUtBTkEgTEVUVEVSIEdPXG5cbiAg44K444KnOiAnamUnLCAvLyBLQVRBS0FOQSBMRVRURVIgWkkgKyBTTUFMTCBFXG4gIOOCuuOCozogJ3ppJywgLy8gS0FUQUtBTkEgTEVUVEVSIFpVICsgU01BTEwgSVxuXG4gIOOCtjogJ3phJywgLy8gS0FUQUtBTkEgTEVUVEVSIFpBXG4gIOOCuOODp+OCpjogJ2rFjScsIC8vIEtBVEFLQU5BIExFVFRFUiBaSSArIFNNQUxMIFlPICsgVVxuICDjgrjjg6XjgqY6ICdqxasnLCAvLyBLQVRBS0FOQSBMRVRURVIgWkkgKyBTTUFMTCBZVSArIFVcbiAg44K444OjOiAnamEnLCAvLyBLQVRBS0FOQSBMRVRURVIgWkkgKyBTTUFMTCBZQVxuICDjgrjjg6c6ICdqbycsIC8vIEtBVEFLQU5BIExFVFRFUiBaSSArIFNNQUxMIFlPXG4gIOOCuOODpTogJ2p1JywgLy8gS0FUQUtBTkEgTEVUVEVSIFpJICsgU01BTEwgWVVcbiAg44K4OiAnamknLCAvLyBLQVRBS0FOQSBMRVRURVIgWklcbiAg44K644KmOiAnesWrJywgLy8gS0FUQUtBTkEgTEVUVEVSIFpVICsgVVxuICDjgro6ICd6dScsIC8vIEtBVEFLQU5BIExFVFRFUiBaVVxuICDjgrw6ICd6ZScsIC8vIEtBVEFLQU5BIExFVFRFUiBaRVxuICDjgr7jgqY6ICd6xY0nLCAvLyBLQVRBS0FOQSBMRVRURVIgWk8gKyBVXG4gIOOCvjogJ3pvJywgLy8gS0FUQUtBTkEgTEVUVEVSIFpPXG5cbiAg44OAOiAnZGEnLCAvLyBLQVRBS0FOQSBMRVRURVIgREFcbiAg44OCOiAnamknLCAvLyBLQVRBS0FOQSBMRVRURVIgRElcbiAg44OF44KmOiAnesWrJywgLy8gS0FUQUtBTkEgTEVUVEVSIERVICsgVVxuICDjg4U6ICd6dScsIC8vIEtBVEFLQU5BIExFVFRFUiBEVVxuICDjg4c6ICdkZScsIC8vIEtBVEFLQU5BIExFVFRFUiBERVxuICDjg4njgqY6ICdkxY0nLCAvLyBLQVRBS0FOQSBMRVRURVIgRE8gKyBVXG4gIOODiTogJ2RvJywgLy8gS0FUQUtBTkEgTEVUVEVSIERPXG5cbiAg44OW44OlOiAnYnl1JywgLy8gS0FUQUtBTkEgTEVUVEVSIEJVICsgU01BTEwgWVVcblxuICDjg5A6ICdiYScsIC8vIEtBVEFLQU5BIExFVFRFUiBCQVxuICDjg5Pjg6fjgqY6ICdiecWNJywgLy8gS0FUQUtBTkEgTEVUVEVSIEJJICsgU01BTEwgWU8gKyBVXG4gIOODk+ODpeOCpjogJ2J5xasnLCAvLyBLQVRBS0FOQSBMRVRURVIgQkkgKyBTTUFMTCBZVSArIFVcbiAg44OT44OjOiAnYnlhJywgLy8gS0FUQUtBTkEgTEVUVEVSIEJJICsgU01BTEwgWUFcbiAg44OT44OnOiAnYnlvJywgLy8gS0FUQUtBTkEgTEVUVEVSIEJJICsgU01BTEwgWU9cbiAg44OT44OlOiAnYnl1JywgLy8gS0FUQUtBTkEgTEVUVEVSIEJJICsgU01BTEwgWVVcbiAg44OTOiAnYmknLCAvLyBLQVRBS0FOQSBMRVRURVIgQklcbiAg44OW44KmOiAnYsWrJywgLy8gS0FUQUtBTkEgTEVUVEVSIEJVICsgVVxuICDjg5Y6ICdidScsIC8vIEtBVEFLQU5BIExFVFRFUiBCVVxuICDjg5k6ICdiZScsIC8vIEtBVEFLQU5BIExFVFRFUiBCRVxuICDjg5zjgqY6ICdixY0nLCAvLyBLQVRBS0FOQSBMRVRURVIgQk8gKyBVXG4gIOODnDogJ2JvJywgLy8gS0FUQUtBTkEgTEVUVEVSIEJPXG5cbiAg44OROiAncGEnLCAvLyBLQVRBS0FOQSBMRVRURVIgUEFcbiAg44OU44On44KmOiAncHnFjScsIC8vIEtBVEFLQU5BIExFVFRFUiBQSSArIFNNQUxMIFlPICsgVVxuICDjg5Tjg6XjgqY6ICdwecWrJywgLy8gS0FUQUtBTkEgTEVUVEVSIFBJICsgU01BTEwgWVUgKyBVXG4gIOODlOODozogJ3B5YScsIC8vIEtBVEFLQU5BIExFVFRFUiBQSSArIFNNQUxMIFlBXG4gIOODlOODpzogJ3B5bycsIC8vIEtBVEFLQU5BIExFVFRFUiBQSSArIFNNQUxMIFlPXG4gIOODlOODpTogJ3B5dScsIC8vIEtBVEFLQU5BIExFVFRFUiBQSSArIFNNQUxMIFlVXG4gIOODlDogJ3BpJywgLy8gS0FUQUtBTkEgTEVUVEVSIFBJXG4gIOODl+OCpjogJ3DFqycsIC8vIEtBVEFLQU5BIExFVFRFUiBQVSArIFVcbiAg44OXOiAncHUnLCAvLyBLQVRBS0FOQSBMRVRURVIgUFVcbiAg44OaOiAncGUnLCAvLyBLQVRBS0FOQSBMRVRURVIgUEVcbiAg44Od44KmOiAncMWNJywgLy8gS0FUQUtBTkEgTEVUVEVSIFBPICsgVVxuICDjg506ICdwbycsIC8vIEtBVEFLQU5BIExFVFRFUiBQT1xuXG4gIOODtDogJ3YnLCAvLyBLQVRBS0FOQSBMRVRURVIgVlVcblxuICAn44O7JzogJyAnLCAvLyBLQVRBS0FOQSBNSURETEUgRE9UXG5cbiAg44GE44GHOiAneWUnLCAvLyBISVJBR0FOQSBMRVRURVIgSSArIFNNQUxMIEVcblxuICDjgYI6ICdhJywgLy8gSElSQUdBTkEgTEVUVEVSIEFcbiAg44GEOiAnaScsIC8vIEhJUkFHQU5BIExFVFRFUiBJXG4gIOOBhuOBhjogJ8WrJywgLy8gSElSQUdBTkEgTEVUVEVSIFUgKyBVXG4gIOOBhjogJ3UnLCAvLyBISVJBR0FOQSBMRVRURVIgVVxuICDjgYg6ICdlJywgLy8gSElSQUdBTkEgTEVUVEVSIEVcbiAg44GK44GGOiAnxY0nLCAvLyBISVJBR0FOQSBMRVRURVIgTyArIFVcbiAg44GKOiAnbycsIC8vIEhJUkFHQU5BIExFVFRFUiBPXG5cbiAg44GP44GBOiAna3dhJywgLy8gSElSQUdBTkEgTEVUVEVSIEtVICsgU01BTEwgQVxuICDjgY/jgYM6ICdrd2knLCAvLyBISVJBR0FOQSBMRVRURVIgS1UgKyBTTUFMTCBJXG4gIOOBj+OBhzogJ2t3ZScsIC8vIEhJUkFHQU5BIExFVFRFUiBLVSArIFNNQUxMIEVcbiAg44GP44GJOiAna3dvJywgLy8gSElSQUdBTkEgTEVUVEVSIEtVICsgU01BTEwgT1xuXG4gIOOBizogJ2thJywgLy8gSElSQUdBTkEgTEVUVEVSIEtBXG4gIOOBjeOCh+OBhjogJ2t5xY0nLCAvLyBISVJBR0FOQSBMRVRURVIgS0kgKyBTTUFMTCBZTyArIFVcbiAg44GN44KF44GGOiAna3nFqycsIC8vIEhJUkFHQU5BIExFVFRFUiBLSSArIFNNQUxMIFlVICsgVVxuICDjgY3jgoM6ICdreWEnLCAvLyBISVJBR0FOQSBMRVRURVIgS0kgKyBTTUFMTCBZQVxuICDjgY3jgoc6ICdreW8nLCAvLyBISVJBR0FOQSBMRVRURVIgS0kgKyBTTUFMTCBZT1xuICDjgY3jgoU6ICdreXUnLCAvLyBISVJBR0FOQSBMRVRURVIgS0kgKyBTTUFMTCBZVVxuICDjgY06ICdraScsIC8vIEhJUkFHQU5BIExFVFRFUiBLSVxuICDjgY/jgYY6ICdrxasnLCAvLyBISVJBR0FOQSBMRVRURVIgS1UgKyBVXG4gIOOBjzogJ2t1JywgLy8gSElSQUdBTkEgTEVUVEVSIEtVXG4gIOOBkTogJ2tlJywgLy8gSElSQUdBTkEgTEVUVEVSIEtFXG4gIOOBk+OBhjogJ2vFjScsIC8vIEhJUkFHQU5BIExFVFRFUiBLTyArIFVcbiAg44GTOiAna28nLCAvLyBISVJBR0FOQSBMRVRURVIgS09cblxuICDjgZfjgYc6ICdzaGUnLCAvLyBISVJBR0FOQSBMRVRURVIgU0kgKyBTTUFMTCBFXG4gIOOBmeOBgzogJ3NpJywgLy8gSElSQUdBTkEgTEVUVEVSIFNVICsgU01BTEwgSVxuXG4gIOOBlTogJ3NhJywgLy8gSElSQUdBTkEgTEVUVEVSIFNBXG4gIOOBl+OCh+OBhjogJ3NoxY0nLCAvLyBISVJBR0FOQSBMRVRURVIgU0kgKyBTTUFMTCBZTyArIFVcbiAg44GX44KF44GGOiAnc2jFqycsIC8vIEhJUkFHQU5BIExFVFRFUiBTSSArIFNNQUxMIFlVICsgVVxuICDjgZfjgoM6ICdzaGEnLCAvLyBISVJBR0FOQSBMRVRURVIgU0kgKyBTTUFMTCBZQVxuICDjgZfjgoc6ICdzaG8nLCAvLyBISVJBR0FOQSBMRVRURVIgU0kgKyBTTUFMTCBZT1xuICDjgZfjgoU6ICdzaHUnLCAvLyBISVJBR0FOQSBMRVRURVIgU0kgKyBTTUFMTCBZVVxuICDjgZc6ICdzaGknLCAvLyBISVJBR0FOQSBMRVRURVIgU0lcbiAg44GZ44GGOiAnc8WrJywgLy8gSElSQUdBTkEgTEVUVEVSIFNVICsgVVxuICDjgZk6ICdzdScsIC8vIEhJUkFHQU5BIExFVFRFUiBTVVxuICDjgZs6ICdzZScsIC8vIEhJUkFHQU5BIExFVFRFUiBTRVxuICDjgZ3jgYY6ICdzxY0nLCAvLyBISVJBR0FOQSBMRVRURVIgU08gKyBVXG4gIOOBnTogJ3NvJywgLy8gSElSQUdBTkEgTEVUVEVSIFNPXG5cbiAg44Gh44GHOiAnY2hlJywgLy8gSElSQUdBTkEgTEVUVEVSIFRJICsgU01BTEwgRVxuICDjgaTjgYE6ICd0c2EnLCAvLyBISVJBR0FOQSBMRVRURVIgVFUgKyBTTUFMTCBBXG4gIOOBpOOBgzogJ3RzaScsIC8vIEhJUkFHQU5BIExFVFRFUiBUVSArIFNNQUxMIElcbiAg44Gk44GHOiAndHNlJywgLy8gSElSQUdBTkEgTEVUVEVSIFRVICsgU01BTEwgRVxuICDjgaTjgYk6ICd0c28nLCAvLyBISVJBR0FOQSBMRVRURVIgVFUgKyBTTUFMTCBPXG4gIOOBpuOBgzogJ3RpJywgLy8gSElSQUdBTkEgTEVUVEVSIFRFICsgU01BTEwgSVxuICDjgafjgYM6ICdkaScsIC8vIEhJUkFHQU5BIExFVFRFUiBERSArIFNNQUxMIElcbiAg44Gm44KFOiAndHl1JywgLy8gSElSQUdBTkEgTEVUVEVSIFRFICsgU01BTEwgWVVcbiAg44Gn44KFOiAnZHl1JywgLy8gSElSQUdBTkEgTEVUVEVSIERFICsgU01BTEwgWVVcbiAg44Go44GDOiAndHdpJywgLy8gSElSQUdBTkEgTEVUVEVSIFRPICsgU01BTEwgSVxuICDjgajjgYU6ICd0dScsIC8vIEhJUkFHQU5BIExFVFRFUiBUTyArIFNNQUxMIFVcbiAg44Gp44GDOiAnZHdpJywgLy8gSElSQUdBTkEgTEVUVEVSIERPICsgU01BTEwgSVxuICDjganjgYU6ICdkdScsIC8vIEhJUkFHQU5BIExFVFRFUiBETyArIFNNQUxMIFVcblxuICDjgZ86ICd0YScsIC8vIEhJUkFHQU5BIExFVFRFUiBUQVxuICDjgaHjgofjgYY6ICdjaMWNJywgLy8gSElSQUdBTkEgTEVUVEVSIFRJICsgU01BTEwgWU8gKyBVXG4gIOOBoeOCheOBhjogJ2NoxasnLCAvLyBISVJBR0FOQSBMRVRURVIgVEkgKyBTTUFMTCBZVSArIFVcbiAg44Gh44KDOiAnY2hhJywgLy8gSElSQUdBTkEgTEVUVEVSIFRJICsgU01BTEwgWUFcbiAg44Gh44KHOiAnY2hvJywgLy8gSElSQUdBTkEgTEVUVEVSIFRJICsgU01BTEwgWU9cbiAg44Gh44KFOiAnY2h1JywgLy8gSElSQUdBTkEgTEVUVEVSIFRJICsgU01BTEwgWVVcbiAg44GhOiAnY2hpJywgLy8gSElSQUdBTkEgTEVUVEVSIFRJXG4gIOOBpOOBhjogJ3RzxasnLCAvLyBISVJBR0FOQSBMRVRURVIgVFUgKyBVXG4gIOOBpDogJ3RzdScsIC8vIEhJUkFHQU5BIExFVFRFUiBUVVxuICDjgaY6ICd0ZScsIC8vIEhJUkFHQU5BIExFVFRFUiBURVxuICDjgajjgYY6ICd0xY0nLCAvLyBISVJBR0FOQSBMRVRURVIgVE8gKyBVXG4gIOOBqDogJ3RvJywgLy8gSElSQUdBTkEgTEVUVEVSIFRPXG5cbiAg44GqOiAnbmEnLCAvLyBISVJBR0FOQSBMRVRURVIgTkFcbiAg44Gr44KH44GGOiAnbnnFjScsIC8vIEhJUkFHQU5BIExFVFRFUiBOSSArIFNNQUxMIFlPICsgVVxuICDjgavjgoXjgYY6ICduecWrJywgLy8gSElSQUdBTkEgTEVUVEVSIE5JICsgU01BTEwgWVUgKyBVXG4gIOOBq+OCgzogJ255YScsIC8vIEhJUkFHQU5BIExFVFRFUiBOSSArIFNNQUxMIFlBXG4gIOOBq+OChzogJ255bycsIC8vIEhJUkFHQU5BIExFVFRFUiBOSSArIFNNQUxMIFlPXG4gIOOBq+OChTogJ255dScsIC8vIEhJUkFHQU5BIExFVFRFUiBOSSArIFNNQUxMIFlVXG4gIOOBqzogJ25pJywgLy8gSElSQUdBTkEgTEVUVEVSIE5JXG4gIOOBrOOBhjogJ27FqycsIC8vIEhJUkFHQU5BIExFVFRFUiBOVSArIFVcbiAg44GsOiAnbnUnLCAvLyBISVJBR0FOQSBMRVRURVIgTlVcbiAg44GtOiAnbmUnLCAvLyBISVJBR0FOQSBMRVRURVIgTkVcbiAg44Gu44GGOiAnbsWNJywgLy8gSElSQUdBTkEgTEVUVEVSIE5PICsgVVxuICDjga46ICdubycsIC8vIEhJUkFHQU5BIExFVFRFUiBOT1xuXG4gIOOBteOBgTogJ2ZhJywgLy8gSElSQUdBTkEgTEVUVEVSIEhVICsgU01BTEwgQVxuICDjgbXjgYM6ICdmaScsIC8vIEhJUkFHQU5BIExFVFRFUiBIVSArIFNNQUxMIElcbiAgLy8gJ+OBteOBhSc6ICdmdScsIC8vIEhJUkFHQU5BIExFVFRFUiBIVSArIFNNQUxMIFVcbiAg44G144GHOiAnZmUnLCAvLyBISVJBR0FOQSBMRVRURVIgSFUgKyBTTUFMTCBFXG4gIOOBteOBiTogJ2ZvJywgLy8gSElSQUdBTkEgTEVUVEVSIEhVICsgU01BTEwgT1xuICDjgbXjgoU6ICdmeXUnLCAvLyBISVJBR0FOQSBMRVRURVIgSFUgKyBTTUFMTCBZVVxuICDjgbvjgYc6ICdod2UnLCAvLyBISVJBR0FOQSBMRVRURVIgSE8gKyBTTUFMTCBFXG5cbiAg44GvOiAnaGEnLCAvLyBISVJBR0FOQSBMRVRURVIgSEFcbiAg44Gy44KH44GGOiAnaHnFjScsIC8vIEhJUkFHQU5BIExFVFRFUiBISSArIFNNQUxMIFlPICsgVVxuICDjgbLjgoXjgYY6ICdoecWrJywgLy8gSElSQUdBTkEgTEVUVEVSIEhJICsgU01BTEwgWVUgKyBVXG4gIOOBsuOCgzogJ2h5YScsIC8vIEhJUkFHQU5BIExFVFRFUiBISSArIFNNQUxMIFlBXG4gIOOBsuOChzogJ2h5bycsIC8vIEhJUkFHQU5BIExFVFRFUiBISSArIFNNQUxMIFlPXG4gIOOBsuOChTogJ2h5dScsIC8vIEhJUkFHQU5BIExFVFRFUiBISSArIFNNQUxMIFlVXG4gIOOBsjogJ2hpJywgLy8gSElSQUdBTkEgTEVUVEVSIEhJXG4gIOOBteOBhjogJ2bFqycsIC8vIEhJUkFHQU5BIExFVFRFUiBIVSArIFVcbiAg44G1OiAnZnUnLCAvLyBISVJBR0FOQSBMRVRURVIgSFVcbiAg44G4OiAnaGUnLCAvLyBISVJBR0FOQSBMRVRURVIgSEVcbiAg44G744GGOiAnaMWNJywgLy8gSElSQUdBTkEgTEVUVEVSIEhPICsgVVxuICDjgbs6ICdobycsIC8vIEhJUkFHQU5BIExFVFRFUiBIT1xuXG4gIOOBvjogJ21hJywgLy8gSElSQUdBTkEgTEVUVEVSIE1BXG4gIOOBv+OCh+OBhjogJ215xY0nLCAvLyBISVJBR0FOQSBMRVRURVIgTUkgKyBTTUFMTCBZTyArIFVcbiAg44G/44KF44GGOiAnbXnFqycsIC8vIEhJUkFHQU5BIExFVFRFUiBNSSArIFNNQUxMIFlVICsgVVxuICDjgb/jgoM6ICdteWEnLCAvLyBISVJBR0FOQSBMRVRURVIgTUkgKyBTTUFMTCBZQVxuICDjgb/jgoc6ICdteW8nLCAvLyBISVJBR0FOQSBMRVRURVIgTUkgKyBTTUFMTCBZT1xuICDjgb/jgoU6ICdteXUnLCAvLyBISVJBR0FOQSBMRVRURVIgTUkgKyBTTUFMTCBZVVxuICDjgb86ICdtaScsIC8vIEhJUkFHQU5BIExFVFRFUiBNSVxuICDjgoDjgYY6ICdtxasnLCAvLyBISVJBR0FOQSBMRVRURVIgTVUgKyBVXG4gIOOCgDogJ211JywgLy8gSElSQUdBTkEgTEVUVEVSIE1VXG4gIOOCgTogJ21lJywgLy8gSElSQUdBTkEgTEVUVEVSIE1FXG4gIOOCguOBhjogJ23FjScsIC8vIEhJUkFHQU5BIExFVFRFUiBNTyArIFVcbiAg44KCOiAnbW8nLCAvLyBISVJBR0FOQSBMRVRURVIgTU9cblxuICDjgoQ6ICd5YScsIC8vIEhJUkFHQU5BIExFVFRFUiBZQVxuICDjgobjgYY6ICd5xasnLCAvLyBISVJBR0FOQSBMRVRURVIgWVUgKyBVXG4gIOOChjogJ3l1JywgLy8gSElSQUdBTkEgTEVUVEVSIFlVXG4gIOOCiOOBhjogJ3nFjScsIC8vIEhJUkFHQU5BIExFVFRFUiBZTyArIFVcbiAg44KIOiAneW8nLCAvLyBISVJBR0FOQSBMRVRURVIgWU9cblxuICDjgorjgYc6ICdyeWUnLCAvLyBISVJBR0FOQSBMRVRURVIgUkkgKyBTTUFMTCBFXG5cbiAg44KJOiAncmEnLCAvLyBISVJBR0FOQSBMRVRURVIgUkFcbiAg44KK44KH44GGOiAncnnFjScsIC8vIEhJUkFHQU5BIExFVFRFUiBSSSArIFNNQUxMIFlPICsgVVxuICDjgorjgoXjgYY6ICdyecWrJywgLy8gSElSQUdBTkEgTEVUVEVSIFJJICsgU01BTEwgWVUgKyBVXG4gIOOCiuOCgzogJ3J5YScsIC8vIEhJUkFHQU5BIExFVFRFUiBSSSArIFNNQUxMIFlBXG4gIOOCiuOChzogJ3J5bycsIC8vIEhJUkFHQU5BIExFVFRFUiBSSSArIFNNQUxMIFlPXG4gIOOCiuOChTogJ3J5dScsIC8vIEhJUkFHQU5BIExFVFRFUiBSSSArIFNNQUxMIFlVXG4gIOOCijogJ3JpJywgLy8gSElSQUdBTkEgTEVUVEVSIFJJXG4gIOOCi+OBhjogJ3LFqycsIC8vIEhJUkFHQU5BIExFVFRFUiBSVSArIFVcbiAg44KLOiAncnUnLCAvLyBISVJBR0FOQSBMRVRURVIgUlVcbiAg44KMOiAncmUnLCAvLyBISVJBR0FOQSBMRVRURVIgUkVcbiAg44KN44GGOiAncsWNJywgLy8gSElSQUdBTkEgTEVUVEVSIFJPICsgVVxuICDjgo06ICdybycsIC8vIEhJUkFHQU5BIExFVFRFUiBST1xuXG4gIOOCjzogJ3dhJywgLy8gSElSQUdBTkEgTEVUVEVSIFdBXG4gIOOCkDogJ2knLCAvLyBISVJBR0FOQSBMRVRURVIgV0lcbiAg44KROiAnZScsIC8vIEhJUkFHQU5BIExFVFRFUiBXRVxuICDjgpI6ICdvJywgLy8gSElSQUdBTkEgTEVUVEVSIFdPXG5cbiAg44KTOiAnbicsIC8vIEhJUkFHQU5BIExFVFRFUiBOXG5cbiAg44GQ44GBOiAnZ3dhJywgLy8gSElSQUdBTkEgTEVUVEVSIEdVICsgU01BTEwgQVxuICDjgZDjgYM6ICdnd2knLCAvLyBISVJBR0FOQSBMRVRURVIgR1UgKyBTTUFMTCBJXG4gIOOBkOOBhzogJ2d3ZScsIC8vIEhJUkFHQU5BIExFVFRFUiBHVSArIFNNQUxMIEVcbiAg44GQ44GJOiAnZ3dvJywgLy8gSElSQUdBTkEgTEVUVEVSIEdVICsgU01BTEwgT1xuXG4gIOOBjDogJ2dhJywgLy8gSElSQUdBTkEgTEVUVEVSIEdBXG4gIOOBjuOCh+OBhjogJ2d5xY0nLCAvLyBISVJBR0FOQSBMRVRURVIgR0kgKyBTTUFMTCBZTyArIFVcbiAg44GO44KF44GGOiAnZ3nFqycsIC8vIEhJUkFHQU5BIExFVFRFUiBHSSArIFNNQUxMIFlVICsgVVxuICDjgY7jgoM6ICdneWEnLCAvLyBISVJBR0FOQSBMRVRURVIgR0kgKyBTTUFMTCBZQVxuICDjgY7jgoc6ICdneW8nLCAvLyBISVJBR0FOQSBMRVRURVIgR0kgKyBTTUFMTCBZT1xuICDjgY7jgoU6ICdneXUnLCAvLyBISVJBR0FOQSBMRVRURVIgR0kgKyBTTUFMTCBZVVxuICDjgY46ICdnaScsIC8vIEhJUkFHQU5BIExFVFRFUiBHSVxuICDjgZDjgYY6ICdnxasnLCAvLyBISVJBR0FOQSBMRVRURVIgR1UgKyBVXG4gIOOBkDogJ2d1JywgLy8gSElSQUdBTkEgTEVUVEVSIEdVXG4gIOOBkjogJ2dlJywgLy8gSElSQUdBTkEgTEVUVEVSIEdFXG4gIOOBlOOBhjogJ2fFjScsIC8vIEhJUkFHQU5BIExFVFRFUiBHTyArIFVcbiAg44GUOiAnZ28nLCAvLyBISVJBR0FOQSBMRVRURVIgR09cblxuICDjgZjjgYc6ICdqZScsIC8vIEhJUkFHQU5BIExFVFRFUiBaSSArIFNNQUxMIEVcbiAg44Ga44GDOiAnemknLCAvLyBISVJBR0FOQSBMRVRURVIgWlUgKyBTTUFMTCBJXG5cbiAg44GWOiAnemEnLCAvLyBISVJBR0FOQSBMRVRURVIgWkFcbiAg44GY44KH44GGOiAnasWNJywgLy8gSElSQUdBTkEgTEVUVEVSIFpJICsgU01BTEwgWU8gKyBVXG4gIOOBmOOCheOBhjogJ2rFqycsIC8vIEhJUkFHQU5BIExFVFRFUiBaSSArIFNNQUxMIFlVICsgVVxuICDjgZjjgoM6ICdqYScsIC8vIEhJUkFHQU5BIExFVFRFUiBaSSArIFNNQUxMIFlBXG4gIOOBmOOChzogJ2pvJywgLy8gSElSQUdBTkEgTEVUVEVSIFpJICsgU01BTEwgWU9cbiAg44GY44KFOiAnanUnLCAvLyBISVJBR0FOQSBMRVRURVIgWkkgKyBTTUFMTCBZVVxuICDjgZg6ICdqaScsIC8vIEhJUkFHQU5BIExFVFRFUiBaSVxuICDjgZrjgYY6ICd6xasnLCAvLyBISVJBR0FOQSBMRVRURVIgWlUgKyBVXG4gIOOBmjogJ3p1JywgLy8gSElSQUdBTkEgTEVUVEVSIFpVXG4gIOOBnDogJ3plJywgLy8gSElSQUdBTkEgTEVUVEVSIFpFXG4gIOOBnuOBhjogJ3rFjScsIC8vIEhJUkFHQU5BIExFVFRFUiBaTyArIFVcbiAg44GeOiAnem8nLCAvLyBISVJBR0FOQSBMRVRURVIgWk9cblxuICDjgaA6ICdkYScsIC8vIEhJUkFHQU5BIExFVFRFUiBEQVxuICDjgaI6ICdqaScsIC8vIEhJUkFHQU5BIExFVFRFUiBESVxuICDjgaXjgYY6ICd6xasnLCAvLyBISVJBR0FOQSBMRVRURVIgRFUgKyBVXG4gIOOBpTogJ3p1JywgLy8gSElSQUdBTkEgTEVUVEVSIERVXG4gIOOBpzogJ2RlJywgLy8gSElSQUdBTkEgTEVUVEVSIERFXG4gIOOBqeOBhjogJ2TFjScsIC8vIEhJUkFHQU5BIExFVFRFUiBETyArIFVcbiAg44GpOiAnZG8nLCAvLyBISVJBR0FOQSBMRVRURVIgRE9cblxuICDjgbbjgoU6ICdieXUnLCAvLyBISVJBR0FOQSBMRVRURVIgQlUgKyBTTUFMTCBZVVxuXG4gIOOBsDogJ2JhJywgLy8gSElSQUdBTkEgTEVUVEVSIEJBXG4gIOOBs+OCh+OBhjogJ2J5xY0nLCAvLyBISVJBR0FOQSBMRVRURVIgQkkgKyBTTUFMTCBZTyArIFVcbiAg44Gz44KF44GGOiAnYnnFqycsIC8vIEhJUkFHQU5BIExFVFRFUiBCSSArIFNNQUxMIFlVICsgVVxuICDjgbPjgoM6ICdieWEnLCAvLyBISVJBR0FOQSBMRVRURVIgQkkgKyBTTUFMTCBZQVxuICDjgbPjgoc6ICdieW8nLCAvLyBISVJBR0FOQSBMRVRURVIgQkkgKyBTTUFMTCBZT1xuICDjgbPjgoU6ICdieXUnLCAvLyBISVJBR0FOQSBMRVRURVIgQkkgKyBTTUFMTCBZVVxuICDjgbM6ICdiaScsIC8vIEhJUkFHQU5BIExFVFRFUiBCSVxuICDjgbbjgYY6ICdixasnLCAvLyBISVJBR0FOQSBMRVRURVIgQlUgKyBVXG4gIOOBtjogJ2J1JywgLy8gSElSQUdBTkEgTEVUVEVSIEJVXG4gIOOBuTogJ2JlJywgLy8gSElSQUdBTkEgTEVUVEVSIEJFXG4gIOOBvOOBhjogJ2LFjScsIC8vIEhJUkFHQU5BIExFVFRFUiBCTyArIFVcbiAg44G8OiAnYm8nLCAvLyBISVJBR0FOQSBMRVRURVIgQk9cblxuICDjgbE6ICdwYScsIC8vIEhJUkFHQU5BIExFVFRFUiBQQVxuICDjgbTjgofjgYY6ICdwecWNJywgLy8gSElSQUdBTkEgTEVUVEVSIFBJICsgU01BTEwgWU8gKyBVXG4gIOOBtOOCheOBhjogJ3B5xasnLCAvLyBISVJBR0FOQSBMRVRURVIgUEkgKyBTTUFMTCBZVSArIFVcbiAg44G044KDOiAncHlhJywgLy8gSElSQUdBTkEgTEVUVEVSIFBJICsgU01BTEwgWUFcbiAg44G044KHOiAncHlvJywgLy8gSElSQUdBTkEgTEVUVEVSIFBJICsgU01BTEwgWU9cbiAg44G044KFOiAncHl1JywgLy8gSElSQUdBTkEgTEVUVEVSIFBJICsgU01BTEwgWVVcbiAg44G0OiAncGknLCAvLyBISVJBR0FOQSBMRVRURVIgUElcbiAg44G344GGOiAncMWrJywgLy8gSElSQUdBTkEgTEVUVEVSIFBVICsgVVxuICDjgbc6ICdwdScsIC8vIEhJUkFHQU5BIExFVFRFUiBQVVxuICDjgbo6ICdwZScsIC8vIEhJUkFHQU5BIExFVFRFUiBQRVxuICDjgb3jgYY6ICdwxY0nLCAvLyBISVJBR0FOQSBMRVRURVIgUE8gKyBVXG4gIOOBvTogJ3BvJywgLy8gSElSQUdBTkEgTEVUVEVSIFBPXG5cbiAg44KUOiAndicgLy8gSElSQUdBTkEgTEVUVEVSIFZVXG59XG5cbmNvbnN0IHRyYW5zbGl0ZXJhdGlvblRhYmxlMyA9IHtcbiAgYeOCoTogJ8SBJyxcbiAgYeOBgTogJ8SBJyxcbiAgaeOCo+ODvDogJ8SrJyxcbiAgaeOCozogJ8SrJyxcbiAgaeOBg+ODvDogJ8SrJyxcbiAgaeOBgzogJ8SrJyxcbiAgYeODvDogJ8SBJyxcbiAgaeODvDogJ8SrJyxcbiAgdeODvDogJ8WrJyxcbiAgZeODvDogJ8STJyxcbiAgb+ODvDogJ8WNJyxcblxuICAvLyBGYWxsYmFjayBmb3Igc21hbGwgdm93ZWxzXG4gIOOCoTogJ2EnLFxuICDjgqM6ICdpJyxcbiAg44KlOiAndScsXG4gIOOCpzogJ2UnLFxuICDjgqk6ICdvJyxcbiAg44GBOiAnYScsXG4gIOOBgzogJ2knLFxuICDjgYU6ICd1JyxcbiAg44GHOiAnZScsXG4gIOOBiTogJ28nXG59XG5cbmNvbnN0IHJlcGxhY2UxID0gcmVwbGFjZXIodHJhbnNsaXRlcmF0aW9uVGFibGUxKVxuY29uc3QgcmVwbGFjZTIgPSByZXBsYWNlcih0cmFuc2xpdGVyYXRpb25UYWJsZTIpXG5jb25zdCByZXBsYWNlMyA9IHJlcGxhY2VyKHRyYW5zbGl0ZXJhdGlvblRhYmxlMylcblxubW9kdWxlLmV4cG9ydHMgPSBmdW5jdGlvbiAoc3RyKSB7XG4gIHN0ciA9IHJlcGxhY2UxKHN0cilcblxuICBzdHIgPSBzdHJcbiAgICAucmVwbGFjZSgv44ODKD89W+ODs10pL2csICduJykvLyBLQVRBS0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44GjKD89W+OCk10pL2csICduJykvLyBISVJBR0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44OzKD89W+ODkOODk+ODluODmeODnOODkeODlOODl+ODmuODneODnuODn+ODoOODoeODol0pL2csICdtJykvLyBLQVRBS0FOQSBMRVRURVIgTlxuICAgIC5yZXBsYWNlKC/jgpMoPz1b44Gw44Gz44G244G544G844Gx44G044G344G644G944G+44G/44KA44KB44KCXSkvZywgJ20nKS8vIEhJUkFHQU5BIExFVFRFUiBOXG4gICAgLnJlcGxhY2UoL+ODsyg/PVvjg6Tjg6bjg6jjgqLjgqTjgqbjgqjjgqpdKS9nLCBcIm4nXCIpLy8gS0FUQUtBTkEgTEVUVEVSIE5cbiAgICAucmVwbGFjZSgv44KTKD89W+OChOOChuOCiOOBguOBhOOBhuOBiOOBil0pL2csIFwibidcIikvLyBISVJBR0FOQSBMRVRURVIgTlxuICBzdHIgPSBzdHJcbiAgICAucmVwbGFjZSgv44ODKD89W+OCq+OCreOCr+OCseOCs10pL2csICdrJykvLyBLQVRBS0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44GjKD89W+OBi+OBjeOBj+OBkeOBk10pL2csICdrJykvLyBISVJBR0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44ODKD89W+OCrOOCruOCsOOCsuOCtF0pL2csICdnJykvLyBLQVRBS0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44GjKD89W+OBjOOBjuOBkOOBkuOBlF0pL2csICdnJykvLyBISVJBR0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44ODKD89W+OCteOCt+OCueOCu+OCvV0pL2csICdzJykvLyBLQVRBS0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44GjKD89W+OBleOBl+OBmeOBm+OBnV0pL2csICdzJykvLyBISVJBR0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44ODKD89W+OCtuOCuuOCvOOCvl0pL2csICd6JykvLyBLQVRBS0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44GjKD89W+OBluOBmuOBnOOBnl0pL2csICd6JykvLyBISVJBR0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44ODKD89W+OCuF0pL2csICdqJykvLyBLQVRBS0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44GjKD89W+OBmF0pL2csICdqJykvLyBISVJBR0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44ODKD89W+OCv+ODgeODhOODhuODiF0pL2csICd0JykvLyBLQVRBS0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44GjKD89W+OBn+OBoeOBpOOBpuOBqF0pL2csICd0JykvLyBISVJBR0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44ODKD89W+ODgOODguODheODh+ODiV0pL2csICd0JykvLyBLQVRBS0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44GjKD89W+OBoOOBouOBpeOBp+OBqV0pL2csICd0JykvLyBISVJBR0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44ODKD89W+ODj+ODkuODmOODm10pL2csICdoJykvLyBLQVRBS0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44GjKD89W+OBr+OBsuOBuOOBu10pL2csICdoJykvLyBISVJBR0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44ODKD89W+ODlV0pL2csICdmJykvLyBLQVRBS0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44GjKD89W+OBtV0pL2csICdmJykvLyBISVJBR0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44ODKD89W+ODkOODk+ODluODmeODnF0pL2csICdiJykvLyBLQVRBS0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44GjKD89W+OBsOOBs+OBtuOBueOBvF0pL2csICdiJykvLyBISVJBR0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44ODKD89W+ODkeODlOODl+ODmuODnV0pL2csICdwJykvLyBLQVRBS0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44GjKD89W+OBseOBtOOBt+OBuuOBvV0pL2csICdwJykvLyBISVJBR0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44ODKD89W+ODqeODquODq+ODrOODrV0pL2csICdyJykvLyBLQVRBS0FOQSBMRVRURVIgU01BTEwgVFVcbiAgICAucmVwbGFjZSgv44GjKD89W+OCieOCiuOCi+OCjOOCjV0pL2csICdyJykvLyBISVJBR0FOQSBMRVRURVIgU01BTEwgVFVcblxuICBzdHIgPSByZXBsYWNlMihzdHIpXG4gIHN0ciA9IHJlcGxhY2UzKHN0cilcblxuICBzdHIgPSBzdHJcbiAgICAucmVwbGFjZSgvKOODg3zjgaMpXFxCL2csICd0JykvLyBGSU5BTCBLQVRBS0FOQSBMRVRURVIgU01BTEwgVFVcblxuICByZXR1cm4gc3RyXG59XG4iXSwibWFwcGluZ3MiOiJBQUFBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTs7QUFFQSxZQUFZOztBQUVaO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUVBLE1BQU1BLFFBQVEsR0FBR0MsT0FBTyxDQUFDLGtCQUFrQixDQUFDLENBQUNELFFBQVE7QUFFckQsTUFBTUUscUJBQXFCLEdBQUc7RUFDNUJDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsRUFBRSxFQUFFLEdBQUc7RUFBRTs7RUFFVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxFQUFFLEVBQUUsS0FBSztFQUFFOztFQUVYQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLEVBQUUsRUFBRSxHQUFHO0VBQUU7O0VBRVRDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsRUFBRSxFQUFFLEtBQUssQ0FBQztBQUNaLENBQUM7QUFFRCxNQUFNQyxxQkFBcUIsR0FBRztFQUM1QkMsRUFBRSxFQUFFLElBQUk7RUFBRTs7RUFFVkMsQ0FBQyxFQUFFLEdBQUc7RUFBRTtFQUNSQyxDQUFDLEVBQUUsR0FBRztFQUFFO0VBQ1JDLEVBQUUsRUFBRSxHQUFHO0VBQUU7RUFDVEMsQ0FBQyxFQUFFLEdBQUc7RUFBRTtFQUNSQyxDQUFDLEVBQUUsR0FBRztFQUFFO0VBQ1JDLEVBQUUsRUFBRSxHQUFHO0VBQUU7RUFDVEMsQ0FBQyxFQUFFLEdBQUc7RUFBRTs7RUFFUkMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTs7RUFFWEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxHQUFHLEVBQUUsS0FBSztFQUFFO0VBQ1pDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFOztFQUVUQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxJQUFJO0VBQUU7O0VBRVZDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsR0FBRyxFQUFFLEtBQUs7RUFBRTtFQUNaQyxHQUFHLEVBQUUsS0FBSztFQUFFO0VBQ1pDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLENBQUMsRUFBRSxLQUFLO0VBQUU7RUFDVkMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFOztFQUVUQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsSUFBSTtFQUFFOztFQUVWQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsR0FBRyxFQUFFLEtBQUs7RUFBRTtFQUNaQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxDQUFDLEVBQUUsS0FBSztFQUFFO0VBQ1ZDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsQ0FBQyxFQUFFLEtBQUs7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTs7RUFFVEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxHQUFHLEVBQUUsS0FBSztFQUFFO0VBQ1pDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7O0VBRVRDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWO0VBQ0FDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7O0VBRVhDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsR0FBRyxFQUFFLEtBQUs7RUFBRTtFQUNaQyxHQUFHLEVBQUUsS0FBSztFQUFFO0VBQ1pDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFOztFQUVUQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsR0FBRyxFQUFFLEtBQUs7RUFBRTtFQUNaQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTs7RUFFVEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFOztFQUVUQyxFQUFFLEVBQUUsS0FBSztFQUFFOztFQUVYQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsR0FBRyxFQUFFLEtBQUs7RUFBRTtFQUNaQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTs7RUFFVEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxDQUFDLEVBQUUsR0FBRztFQUFFO0VBQ1JDLENBQUMsRUFBRSxHQUFHO0VBQUU7RUFDUkMsQ0FBQyxFQUFFLEdBQUc7RUFBRTs7RUFFUkMsQ0FBQyxFQUFFLEdBQUc7RUFBRTs7RUFFUkMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTs7RUFFWEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxHQUFHLEVBQUUsS0FBSztFQUFFO0VBQ1pDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7O0VBRVRDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsRUFBRSxFQUFFLElBQUk7RUFBRTs7RUFFVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxHQUFHLEVBQUUsSUFBSTtFQUFFO0VBQ1hDLEdBQUcsRUFBRSxJQUFJO0VBQUU7RUFDWEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7O0VBRVRDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7O0VBRVRDLEVBQUUsRUFBRSxLQUFLO0VBQUU7O0VBRVhDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsR0FBRyxFQUFFLEtBQUs7RUFBRTtFQUNaQyxHQUFHLEVBQUUsS0FBSztFQUFFO0VBQ1pDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFOztFQUVUQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsR0FBRyxFQUFFLEtBQUs7RUFBRTtFQUNaQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTs7RUFFVEMsQ0FBQyxFQUFFLEdBQUc7RUFBRTs7RUFFUixHQUFHLEVBQUUsR0FBRztFQUFFOztFQUVWQyxFQUFFLEVBQUUsSUFBSTtFQUFFOztFQUVWQyxDQUFDLEVBQUUsR0FBRztFQUFFO0VBQ1JDLENBQUMsRUFBRSxHQUFHO0VBQUU7RUFDUkMsRUFBRSxFQUFFLEdBQUc7RUFBRTtFQUNUQyxDQUFDLEVBQUUsR0FBRztFQUFFO0VBQ1JDLENBQUMsRUFBRSxHQUFHO0VBQUU7RUFDUkMsRUFBRSxFQUFFLEdBQUc7RUFBRTtFQUNUQyxDQUFDLEVBQUUsR0FBRztFQUFFOztFQUVSQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFOztFQUVYQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsR0FBRyxFQUFFLEtBQUs7RUFBRTtFQUNaQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTs7RUFFVEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsSUFBSTtFQUFFOztFQUVWQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsR0FBRyxFQUFFLEtBQUs7RUFBRTtFQUNaQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxDQUFDLEVBQUUsS0FBSztFQUFFO0VBQ1ZDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTs7RUFFVEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLElBQUk7RUFBRTs7RUFFVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxHQUFHLEVBQUUsS0FBSztFQUFFO0VBQ1pDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsQ0FBQyxFQUFFLEtBQUs7RUFBRTtFQUNWQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLENBQUMsRUFBRSxLQUFLO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7O0VBRVRDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsR0FBRyxFQUFFLEtBQUs7RUFBRTtFQUNaQyxHQUFHLEVBQUUsS0FBSztFQUFFO0VBQ1pDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFOztFQUVUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVjtFQUNBQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFOztFQUVYQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsR0FBRyxFQUFFLEtBQUs7RUFBRTtFQUNaQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTs7RUFFVEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxHQUFHLEVBQUUsS0FBSztFQUFFO0VBQ1pDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7O0VBRVRDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTs7RUFFVEMsRUFBRSxFQUFFLEtBQUs7RUFBRTs7RUFFWEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxHQUFHLEVBQUUsS0FBSztFQUFFO0VBQ1pDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7O0VBRVRDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsQ0FBQyxFQUFFLEdBQUc7RUFBRTtFQUNSQyxDQUFDLEVBQUUsR0FBRztFQUFFO0VBQ1JDLENBQUMsRUFBRSxHQUFHO0VBQUU7O0VBRVJDLENBQUMsRUFBRSxHQUFHO0VBQUU7O0VBRVJDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7O0VBRVhDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsR0FBRyxFQUFFLEtBQUs7RUFBRTtFQUNaQyxHQUFHLEVBQUUsS0FBSztFQUFFO0VBQ1pDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFOztFQUVUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLEVBQUUsRUFBRSxJQUFJO0VBQUU7O0VBRVZDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsR0FBRyxFQUFFLElBQUk7RUFBRTtFQUNYQyxHQUFHLEVBQUUsSUFBSTtFQUFFO0VBQ1hDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFOztFQUVUQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsRUFBRSxFQUFFLElBQUk7RUFBRTtFQUNWQyxDQUFDLEVBQUUsSUFBSTtFQUFFOztFQUVUQyxFQUFFLEVBQUUsS0FBSztFQUFFOztFQUVYQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsR0FBRyxFQUFFLEtBQUs7RUFBRTtFQUNaQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxDQUFDLEVBQUUsSUFBSTtFQUFFO0VBQ1RDLEVBQUUsRUFBRSxJQUFJO0VBQUU7RUFDVkMsQ0FBQyxFQUFFLElBQUk7RUFBRTs7RUFFVEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxHQUFHLEVBQUUsS0FBSztFQUFFO0VBQ1pDLEdBQUcsRUFBRSxLQUFLO0VBQUU7RUFDWkMsRUFBRSxFQUFFLEtBQUs7RUFBRTtFQUNYQyxFQUFFLEVBQUUsS0FBSztFQUFFO0VBQ1hDLEVBQUUsRUFBRSxLQUFLO0VBQUU7RUFDWEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7RUFDVEMsQ0FBQyxFQUFFLElBQUk7RUFBRTtFQUNUQyxFQUFFLEVBQUUsSUFBSTtFQUFFO0VBQ1ZDLENBQUMsRUFBRSxJQUFJO0VBQUU7O0VBRVRDLENBQUMsRUFBRSxHQUFHLENBQUM7QUFDVCxDQUFDO0FBRUQsTUFBTUMscUJBQXFCLEdBQUc7RUFDNUJDLEVBQUUsRUFBRSxHQUFHO0VBQ1BDLEVBQUUsRUFBRSxHQUFHO0VBQ1BDLEdBQUcsRUFBRSxHQUFHO0VBQ1JDLEVBQUUsRUFBRSxHQUFHO0VBQ1BDLEdBQUcsRUFBRSxHQUFHO0VBQ1JDLEVBQUUsRUFBRSxHQUFHO0VBQ1BDLEVBQUUsRUFBRSxHQUFHO0VBQ1BDLEVBQUUsRUFBRSxHQUFHO0VBQ1BDLEVBQUUsRUFBRSxHQUFHO0VBQ1BDLEVBQUUsRUFBRSxHQUFHO0VBQ1BDLEVBQUUsRUFBRSxHQUFHO0VBRVA7RUFDQUMsQ0FBQyxFQUFFLEdBQUc7RUFDTkMsQ0FBQyxFQUFFLEdBQUc7RUFDTkMsQ0FBQyxFQUFFLEdBQUc7RUFDTkMsQ0FBQyxFQUFFLEdBQUc7RUFDTkMsQ0FBQyxFQUFFLEdBQUc7RUFDTkMsQ0FBQyxFQUFFLEdBQUc7RUFDTkMsQ0FBQyxFQUFFLEdBQUc7RUFDTkMsQ0FBQyxFQUFFLEdBQUc7RUFDTkMsQ0FBQyxFQUFFLEdBQUc7RUFDTkMsQ0FBQyxFQUFFO0FBQ0wsQ0FBQztBQUVELE1BQU1DLFFBQVEsR0FBRzNhLFFBQVEsQ0FBQ0UscUJBQXFCLENBQUM7QUFDaEQsTUFBTTBhLFFBQVEsR0FBRzVhLFFBQVEsQ0FBQ3VCLHFCQUFxQixDQUFDO0FBQ2hELE1BQU1zWixRQUFRLEdBQUc3YSxRQUFRLENBQUNxWixxQkFBcUIsQ0FBQztBQUVoRHlCLE1BQU0sQ0FBQ0MsT0FBTyxHQUFHLFVBQVVDLEdBQUcsRUFBRTtFQUM5QkEsR0FBRyxHQUFHTCxRQUFRLENBQUNLLEdBQUcsQ0FBQztFQUVuQkEsR0FBRyxHQUFHQSxHQUFHLENBQ05DLE9BQU8sQ0FBQyxXQUFXLEVBQUUsR0FBRyxDQUFDO0VBQUEsQ0FDekJBLE9BQU8sQ0FBQyxXQUFXLEVBQUUsR0FBRyxDQUFDO0VBQUEsQ0FDekJBLE9BQU8sQ0FBQyx5QkFBeUIsRUFBRSxHQUFHLENBQUM7RUFBQSxDQUN2Q0EsT0FBTyxDQUFDLHlCQUF5QixFQUFFLEdBQUcsQ0FBQztFQUFBLENBQ3ZDQSxPQUFPLENBQUMsa0JBQWtCLEVBQUUsSUFBSSxDQUFDO0VBQUEsQ0FDakNBLE9BQU8sQ0FBQyxrQkFBa0IsRUFBRSxJQUFJLENBQUM7RUFDcENELEdBQUcsR0FBR0EsR0FBRyxDQUNOQyxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsY0FBYyxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzVCQSxPQUFPLENBQUMsY0FBYyxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzVCQSxPQUFPLENBQUMsV0FBVyxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQ3pCQSxPQUFPLENBQUMsV0FBVyxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQ3pCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsY0FBYyxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzVCQSxPQUFPLENBQUMsY0FBYyxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzVCQSxPQUFPLENBQUMsV0FBVyxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQ3pCQSxPQUFPLENBQUMsV0FBVyxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQ3pCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQztFQUFBLENBQzdCQSxPQUFPLENBQUMsZUFBZSxFQUFFLEdBQUcsQ0FBQzs7RUFFaENELEdBQUcsR0FBR0osUUFBUSxDQUFDSSxHQUFHLENBQUM7RUFDbkJBLEdBQUcsR0FBR0gsUUFBUSxDQUFDRyxHQUFHLENBQUM7RUFFbkJBLEdBQUcsR0FBR0EsR0FBRyxDQUNOQyxPQUFPLENBQUMsVUFBVSxFQUFFLEdBQUcsQ0FBQzs7RUFFM0IsT0FBT0QsR0FBRztBQUNaLENBQUMiLCJpZ25vcmVMaXN0IjpbXX0=

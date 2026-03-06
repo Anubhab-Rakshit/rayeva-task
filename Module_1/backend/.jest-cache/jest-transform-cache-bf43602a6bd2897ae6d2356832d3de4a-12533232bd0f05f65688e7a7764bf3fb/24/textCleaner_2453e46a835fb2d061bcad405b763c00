@@ -1,0 +1,16 @@
+c8229fbae21f5f64f25f55fd281f337a
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.cleanText = cleanText;
+function cleanText(text) {
+  if (!text) return "";
+  return text
+  // Remove basic HTML if present
+  .replace(/<[^>]*>?/gm, "")
+  // Remove excess spaces
+  .replace(/\s+/g, " ").trim();
+}
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJleHBvcnRzIiwiY2xlYW5UZXh0IiwidGV4dCIsInJlcGxhY2UiLCJ0cmltIl0sInNvdXJjZXMiOlsidGV4dENsZWFuZXIudHMiXSwic291cmNlc0NvbnRlbnQiOltudWxsXSwibWFwcGluZ3MiOiI7Ozs7O0FBQUFBLE9BQUEsQ0FBQUMsU0FBQSxHQUFBQSxTQUFBO0FBQUEsU0FBZ0JBLFNBQVNBLENBQUNDLElBQWE7RUFDbkMsSUFBSSxDQUFDQSxJQUFJLEVBQUUsT0FBTyxFQUFFO0VBQ3BCLE9BQU9BO0VBQ0g7RUFBQSxDQUNDQyxPQUFPLENBQUMsWUFBWSxFQUFFLEVBQUU7RUFDekI7RUFBQSxDQUNDQSxPQUFPLENBQUMsTUFBTSxFQUFFLEdBQUcsQ0FBQyxDQUNwQkMsSUFBSSxFQUFFO0FBQ2YiLCJpZ25vcmVMaXN0IjpbXX0=

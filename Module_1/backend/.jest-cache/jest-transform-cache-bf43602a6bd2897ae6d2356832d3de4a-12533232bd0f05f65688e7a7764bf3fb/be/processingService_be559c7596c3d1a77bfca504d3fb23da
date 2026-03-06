@@ -1,0 +1,61 @@
+28300029bde2802db6006b9d47a45182
+"use strict";
+
+var __importDefault = void 0 && (void 0).__importDefault || function (mod) {
+  return mod && mod.__esModule ? mod : {
+    "default": mod
+  };
+};
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.processingService = exports.ProcessingService = void 0;
+const natural_1 = __importDefault(require("natural"));
+const logger_1 = require("../utils/logger");
+class ProcessingService {
+  /**
+   * Deduplicate and canonicalize SEO tags.
+   */
+  canonicalizeTags(tags) {
+    if (!tags || tags.length === 0) return [];
+    const uniqueTags = new Set();
+    const finalTags = [];
+    tags.forEach(tag => {
+      if (!tag) return;
+      const cleanTag = tag.toLowerCase().replace(/[^\w\s-]/g, "").trim();
+      if (cleanTag) {
+        const tokens = new natural_1.default.WordTokenizer().tokenize(cleanTag);
+        const stemmedKey = tokens.map(t => natural_1.default.PorterStemmer.stem(t)).join(" ");
+        if (!uniqueTags.has(stemmedKey)) {
+          uniqueTags.add(stemmedKey);
+          finalTags.push(cleanTag);
+        }
+      }
+    });
+    return finalTags;
+  }
+  /**
+   * Process sustainability filters checking for contradictions.
+   */
+  applySustainabilityLogic(product, generatedFilters, currentConfidence) {
+    const finalFilters = generatedFilters || [];
+    let needsManualReview = false;
+    let adjustedConfidence = currentConfidence;
+    const descStr = product.description.toLowerCase();
+    const isPlastic = descStr.includes("plastic") || descStr.includes("pvc") || descStr.includes("nylon");
+    const hasGreenClaim = finalFilters.includes("plastic_free") || finalFilters.includes("compostable_packaging");
+    if (isPlastic && hasGreenClaim) {
+      logger_1.logger.warn(`Contradiction detected for product ${product.id}: has plastic, but AI generated green claims.`);
+      needsManualReview = true;
+      adjustedConfidence = Math.max(0, adjustedConfidence - 0.4);
+    }
+    return {
+      finalFilters,
+      adjustedConfidence,
+      needsManualReview
+    };
+  }
+}
+exports.ProcessingService = ProcessingService;
+exports.processingService = new ProcessingService();
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJuYXR1cmFsXzEiLCJfX2ltcG9ydERlZmF1bHQiLCJyZXF1aXJlIiwibG9nZ2VyXzEiLCJQcm9jZXNzaW5nU2VydmljZSIsImNhbm9uaWNhbGl6ZVRhZ3MiLCJ0YWdzIiwibGVuZ3RoIiwidW5pcXVlVGFncyIsIlNldCIsImZpbmFsVGFncyIsImZvckVhY2giLCJ0YWciLCJjbGVhblRhZyIsInRvTG93ZXJDYXNlIiwicmVwbGFjZSIsInRyaW0iLCJ0b2tlbnMiLCJkZWZhdWx0IiwiV29yZFRva2VuaXplciIsInRva2VuaXplIiwic3RlbW1lZEtleSIsIm1hcCIsInQiLCJQb3J0ZXJTdGVtbWVyIiwic3RlbSIsImpvaW4iLCJoYXMiLCJhZGQiLCJwdXNoIiwiYXBwbHlTdXN0YWluYWJpbGl0eUxvZ2ljIiwicHJvZHVjdCIsImdlbmVyYXRlZEZpbHRlcnMiLCJjdXJyZW50Q29uZmlkZW5jZSIsImZpbmFsRmlsdGVycyIsIm5lZWRzTWFudWFsUmV2aWV3IiwiYWRqdXN0ZWRDb25maWRlbmNlIiwiZGVzY1N0ciIsImRlc2NyaXB0aW9uIiwiaXNQbGFzdGljIiwiaW5jbHVkZXMiLCJoYXNHcmVlbkNsYWltIiwibG9nZ2VyIiwid2FybiIsImlkIiwiTWF0aCIsIm1heCIsImV4cG9ydHMiLCJwcm9jZXNzaW5nU2VydmljZSJdLCJzb3VyY2VzIjpbInByb2Nlc3NpbmdTZXJ2aWNlLnRzIl0sInNvdXJjZXNDb250ZW50IjpbbnVsbF0sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7OztBQUFBLE1BQUFBLFNBQUEsR0FBQUMsZUFBQSxDQUFBQyxPQUFBO0FBRUEsTUFBQUMsUUFBQSxHQUFBRCxPQUFBO0FBRUEsTUFBYUUsaUJBQWlCO0VBRTFCOzs7RUFHT0MsZ0JBQWdCQSxDQUFDQyxJQUFjO0lBQ2xDLElBQUksQ0FBQ0EsSUFBSSxJQUFJQSxJQUFJLENBQUNDLE1BQU0sS0FBSyxDQUFDLEVBQUUsT0FBTyxFQUFFO0lBRXpDLE1BQU1DLFVBQVUsR0FBRyxJQUFJQyxHQUFHLEVBQVU7SUFDcEMsTUFBTUMsU0FBUyxHQUFhLEVBQUU7SUFFOUJKLElBQUksQ0FBQ0ssT0FBTyxDQUFDQyxHQUFHLElBQUc7TUFDZixJQUFJLENBQUNBLEdBQUcsRUFBRTtNQUVWLE1BQU1DLFFBQVEsR0FBR0QsR0FBRyxDQUFDRSxXQUFXLEVBQUUsQ0FBQ0MsT0FBTyxDQUFDLFdBQVcsRUFBRSxFQUFFLENBQUMsQ0FBQ0MsSUFBSSxFQUFFO01BRWxFLElBQUlILFFBQVEsRUFBRTtRQUNWLE1BQU1JLE1BQU0sR0FBRyxJQUFJakIsU0FBQSxDQUFBa0IsT0FBTyxDQUFDQyxhQUFhLEVBQUUsQ0FBQ0MsUUFBUSxDQUFDUCxRQUFRLENBQUM7UUFDN0QsTUFBTVEsVUFBVSxHQUFHSixNQUFNLENBQUNLLEdBQUcsQ0FBQ0MsQ0FBQyxJQUFJdkIsU0FBQSxDQUFBa0IsT0FBTyxDQUFDTSxhQUFhLENBQUNDLElBQUksQ0FBQ0YsQ0FBQyxDQUFDLENBQUMsQ0FBQ0csSUFBSSxDQUFDLEdBQUcsQ0FBQztRQUUzRSxJQUFJLENBQUNsQixVQUFVLENBQUNtQixHQUFHLENBQUNOLFVBQVUsQ0FBQyxFQUFFO1VBQzdCYixVQUFVLENBQUNvQixHQUFHLENBQUNQLFVBQVUsQ0FBQztVQUMxQlgsU0FBUyxDQUFDbUIsSUFBSSxDQUFDaEIsUUFBUSxDQUFDO1FBQzVCO01BQ0o7SUFDSixDQUFDLENBQUM7SUFFRixPQUFPSCxTQUFTO0VBQ3BCO0VBRUE7OztFQUdPb0Isd0JBQXdCQSxDQUMzQkMsT0FBcUIsRUFDckJDLGdCQUEwQixFQUMxQkMsaUJBQXlCO0lBR3pCLE1BQU1DLFlBQVksR0FBR0YsZ0JBQWdCLElBQUksRUFBRTtJQUMzQyxJQUFJRyxpQkFBaUIsR0FBRyxLQUFLO0lBQzdCLElBQUlDLGtCQUFrQixHQUFHSCxpQkFBaUI7SUFFMUMsTUFBTUksT0FBTyxHQUFHTixPQUFPLENBQUNPLFdBQVcsQ0FBQ3hCLFdBQVcsRUFBRTtJQUVqRCxNQUFNeUIsU0FBUyxHQUFHRixPQUFPLENBQUNHLFFBQVEsQ0FBQyxTQUFTLENBQUMsSUFBSUgsT0FBTyxDQUFDRyxRQUFRLENBQUMsS0FBSyxDQUFDLElBQUlILE9BQU8sQ0FBQ0csUUFBUSxDQUFDLE9BQU8sQ0FBQztJQUNyRyxNQUFNQyxhQUFhLEdBQUdQLFlBQVksQ0FBQ00sUUFBUSxDQUFDLGNBQWMsQ0FBQyxJQUFJTixZQUFZLENBQUNNLFFBQVEsQ0FBQyx1QkFBdUIsQ0FBQztJQUU3RyxJQUFJRCxTQUFTLElBQUlFLGFBQWEsRUFBRTtNQUM1QnRDLFFBQUEsQ0FBQXVDLE1BQU0sQ0FBQ0MsSUFBSSxDQUFDLHNDQUFzQ1osT0FBTyxDQUFDYSxFQUFFLCtDQUErQyxDQUFDO01BQzVHVCxpQkFBaUIsR0FBRyxJQUFJO01BQ3hCQyxrQkFBa0IsR0FBR1MsSUFBSSxDQUFDQyxHQUFHLENBQUMsQ0FBQyxFQUFFVixrQkFBa0IsR0FBRyxHQUFHLENBQUM7SUFDOUQ7SUFFQSxPQUFPO01BQ0hGLFlBQVk7TUFDWkUsa0JBQWtCO01BQ2xCRDtLQUNIO0VBQ0w7O0FBM0RKWSxPQUFBLENBQUEzQyxpQkFBQSxHQUFBQSxpQkFBQTtBQThEYTJDLE9BQUEsQ0FBQUMsaUJBQWlCLEdBQUcsSUFBSTVDLGlCQUFpQixFQUFFIiwiaWdub3JlTGlzdCI6W119

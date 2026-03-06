@@ -1,0 +1,1 @@
+{"version":3,"names":["_nodeCrypto","require","_default","exports","default","randomUUID"],"sources":["native.js"],"sourcesContent":["import { randomUUID } from 'node:crypto';\nexport default { randomUUID };\n"],"mappings":";;;;;;AAAA,IAAAA,WAAA,GAAAC,OAAA;AAAyC,IAAAC,QAAA,GAAAC,OAAA,CAAAC,OAAA,GAC1B;EAAEC,UAAU,EAAVA;AAAW,CAAC","ignoreList":[]}

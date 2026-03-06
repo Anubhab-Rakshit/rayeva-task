@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/module1/confidencering.tsx","./src/components/module1/inputpanel.tsx","./src/components/module1/resultspanel.tsx","./src/components/module1/sustainabilitycard.tsx","./src/components/module1/terminalloader.tsx","./src/pages/module1page.tsx","./src/services/catalogapi.ts","./src/types/module1.types.ts"],"version":"5.9.3"}

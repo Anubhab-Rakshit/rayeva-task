@@ -1,0 +1,80 @@
+66124f143d34820493a1ad9c33fbd3dc
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.aiService = exports.AiService = void 0;
+const generative_ai_1 = require("@google/generative-ai");
+const mockDb_1 = require("../database/mockDb");
+const ajvSchema_1 = require("../validators/ajvSchema");
+const logger_1 = require("../utils/logger");
+class AiService {
+  buildPrompt(product) {
+    const allowedCategories = mockDb_1.dbRepository.getAllowedCategories();
+    const allowedFilters = mockDb_1.dbRepository.getAllowedSustainabilityTags();
+    const systemPrompt = `You are an assistant that MUST return JSON exactly matching the provided schema. 
+Use the product title, description, and image cues (if provided via attributes) to pick the best primary_category from the provided list, suggest sub_categories, and generate 5-10 SEO tags and sustainability filters. Include confidence (0-1). If unsure, choose the safest option and set confidence < 0.6.
+
+Schema:
+${JSON.stringify(ajvSchema_1.aiOutputSchema, null, 2)}
+
+Allowed primary categories: [${allowedCategories.join(", ")}]
+Allowed sustainability filters: [${allowedFilters.join(", ")}]
+`;
+    const userPrompt = `Product input:
+Title: ${product.title}
+Description: ${product.description}
+Attributes: ${JSON.stringify(product.attributes || {})}
+
+Generate the JSON response matching the schema.`;
+    return `${systemPrompt}\n\n${userPrompt}`;
+  }
+  async generateMetadata(product) {
+    const prompt = this.buildPrompt(product);
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({
+          model: "gemini-2.5-flash",
+          generationConfig: {
+            responseMimeType: "application/json"
+          }
+        });
+        logger_1.logger.info(`Sending prompt to Gemini for product ${product.id}`);
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text();
+        return {
+          prompt,
+          response: JSON.parse(responseText),
+          model: "gemini-2.5-flash"
+        };
+      } catch (error) {
+        logger_1.logger.error("LLM Generation Failed. Using fallback...", error);
+        throw error;
+      }
+    } else {
+      logger_1.logger.warn("GEMINI_API_KEY is not set! Using a mock generated JSON.");
+      return {
+        prompt,
+        response: {
+          primary_category: "Beverages",
+          sub_categories: ["tea", "masala tea"],
+          seo_tags: ["masala chai", "organic tea", "hand-blended masala", "Indian spices tea", "premium loose leaf"],
+          sustainability_filters: ["locally_sourced", "compostable_packaging"],
+          confidence: {
+            primary_category: 0.92,
+            tags: 0.88
+          },
+          explanations: {
+            primary_category: "Title contains 'Masala', description mentions 'Premium tea' and packaging."
+          }
+        },
+        model: "mock-model"
+      };
+    }
+  }
+}
+exports.AiService = AiService;
+exports.aiService = new AiService();
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJnZW5lcmF0aXZlX2FpXzEiLCJyZXF1aXJlIiwibW9ja0RiXzEiLCJhanZTY2hlbWFfMSIsImxvZ2dlcl8xIiwiQWlTZXJ2aWNlIiwiYnVpbGRQcm9tcHQiLCJwcm9kdWN0IiwiYWxsb3dlZENhdGVnb3JpZXMiLCJkYlJlcG9zaXRvcnkiLCJnZXRBbGxvd2VkQ2F0ZWdvcmllcyIsImFsbG93ZWRGaWx0ZXJzIiwiZ2V0QWxsb3dlZFN1c3RhaW5hYmlsaXR5VGFncyIsInN5c3RlbVByb21wdCIsIkpTT04iLCJzdHJpbmdpZnkiLCJhaU91dHB1dFNjaGVtYSIsImpvaW4iLCJ1c2VyUHJvbXB0IiwidGl0bGUiLCJkZXNjcmlwdGlvbiIsImF0dHJpYnV0ZXMiLCJnZW5lcmF0ZU1ldGFkYXRhIiwicHJvbXB0IiwicHJvY2VzcyIsImVudiIsIkdFTUlOSV9BUElfS0VZIiwiZ2VuQUkiLCJHb29nbGVHZW5lcmF0aXZlQUkiLCJtb2RlbCIsImdldEdlbmVyYXRpdmVNb2RlbCIsImdlbmVyYXRpb25Db25maWciLCJyZXNwb25zZU1pbWVUeXBlIiwibG9nZ2VyIiwiaW5mbyIsImlkIiwicmVzdWx0IiwiZ2VuZXJhdGVDb250ZW50IiwicmVzcG9uc2VUZXh0IiwicmVzcG9uc2UiLCJ0ZXh0IiwicGFyc2UiLCJlcnJvciIsIndhcm4iLCJwcmltYXJ5X2NhdGVnb3J5Iiwic3ViX2NhdGVnb3JpZXMiLCJzZW9fdGFncyIsInN1c3RhaW5hYmlsaXR5X2ZpbHRlcnMiLCJjb25maWRlbmNlIiwidGFncyIsImV4cGxhbmF0aW9ucyIsImV4cG9ydHMiLCJhaVNlcnZpY2UiXSwic291cmNlcyI6WyJhaVNlcnZpY2UudHMiXSwic291cmNlc0NvbnRlbnQiOltudWxsXSwibWFwcGluZ3MiOiI7Ozs7OztBQUFBLE1BQUFBLGVBQUEsR0FBQUMsT0FBQTtBQUNBLE1BQUFDLFFBQUEsR0FBQUQsT0FBQTtBQUNBLE1BQUFFLFdBQUEsR0FBQUYsT0FBQTtBQUVBLE1BQUFHLFFBQUEsR0FBQUgsT0FB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

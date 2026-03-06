@@ -1,0 +1,260 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-void: #020807;
+  --bg-surface: #060f0a;
+  --bg-card: rgba(8, 20, 12, 0.85);
+  --border-dim: rgba(74, 222, 128, 0.08);
+  --border-mid: rgba(74, 222, 128, 0.18);
+  --border-bright: rgba(74, 222, 128, 0.45);
+  --green-dim: #1a4a2e;
+  --green-mid: #22c55e;
+  --green-bright: #4ade80;
+  --green-neon: #86efac;
+  --amber: #fbbf24;
+  --amber-dim: rgba(251, 191, 36, 0.12);
+  --text-primary: #ecfdf5;
+  --text-secondary: #6ee7b7;
+  --text-muted: #334155;
+  --text-ghost: #1e3a2e;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-void);
+  /* Ambient grid lines */
+  background-image:
+    repeating-linear-gradient(0deg, rgba(74, 222, 128, 0.04) 0px, rgba(74, 222, 128, 0.04) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(74, 222, 128, 0.04) 0px, rgba(74, 222, 128, 0.04) 1px, transparent 1px, transparent 40px);
+  color: var(--text-primary);
+  font-family: 'Instrument Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Ambient orbs */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+}
+
+/* Orb 1: bottom-left */
+body::before {
+  width: 600px;
+  height: 600px;
+  bottom: -200px;
+  left: -150px;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.08) 0%, transparent 70%);
+  animation: orbPulse1 6s ease-in-out infinite;
+}
+
+/* Orb 2: top-right */
+body::after {
+  width: 400px;
+  height: 400px;
+  top: -100px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, transparent 70%);
+  animation: orbPulse2 6s ease-in-out 2s infinite;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+/* Orb 3 implemented in App.tsx as a div */
+
+@keyframes orbPulse1 {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes orbPulse2 {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes orbPulse3 {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--green-dim);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 222, 128, 0.3);
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 1px solid rgba(74, 222, 128, 0.4);
+  outline-offset: 2px;
+}
+
+/* Input resets */
+input,
+textarea,
+select {
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+}
+
+/* Selection */
+::selection {
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--text-primary);
+}
+
+/* Scanline sweep animation */
+@keyframes scanline-sweep {
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(2000px);
+  }
+}
+
+/* Terminal blink */
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Button shimmer */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+
+  100% {
+    transform: translateX(300%) skewX(-15deg);
+  }
+}
+
+/* Gradient shift */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* Hex pulse */
+@keyframes hexPulse {
+
+  0%,
+  100% {
+    fill: transparent;
+  }
+
+  50% {
+    fill: rgba(74, 222, 128, 0.06);
+  }
+}
+
+/* Tag flash */
+@keyframes tagFlash {
+  0% {
+    background: rgba(74, 222, 128, 0.3);
+  }
+
+  100% {
+    background: rgba(74, 222, 128, 0.06);
+  }
+}
+
+/* Arrow pulse */
+@keyframes arrowPulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+    color: var(--green-bright);
+  }
+}
+
+.group:hover .shimmer-sweep {
+  animation: shimmerSweep 0.6s ease forwards;
+}
+
+@keyframes shimmerSweep {
+  from {
+    background-position: 200% center;
+  }
+
+  to {
+    background-position: -200% center;
+  }
+}

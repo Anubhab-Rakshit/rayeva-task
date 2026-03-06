@@ -1,0 +1,49 @@
+47915e0f6c3920586687531f53edd3e8
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+const processingService_1 = require("../src/services/processingService");
+describe('Processing Service - Business Rules', () => {
+  describe('canonicalizeTags', () => {
+    it('should lowercase and deduplicate tags using basic stemming', () => {
+      const rawTags = ['Running Shoes', 'running-shoe', 'RUNNING SHOES', 'sneakers'];
+      const result = processingService_1.processingService.canonicalizeTags(rawTags);
+      // "running shoes" and "running shoe" stem to the same base, so we expect 2 total unique tags
+      expect(result.length).toBe(2);
+      expect(result).toContain('running shoes');
+      expect(result).toContain('sneakers');
+    });
+    it('should handle empty or malformed arrays', () => {
+      expect(processingService_1.processingService.canonicalizeTags([])).toEqual([]);
+    });
+  });
+  describe('applySustainabilityLogic', () => {
+    const product = {
+      id: 'test_1',
+      title: 'Water Bottle',
+      description: 'A generic plastic water bottle.'
+    };
+    it('should drop confidence and flag manual review if plastic contradicts green claim', () => {
+      const llmTags = ['plastic_free', 'reusable'];
+      const startingConfidence = 0.9;
+      const result = processingService_1.processingService.applySustainabilityLogic(product, llmTags, startingConfidence);
+      expect(result.needsManualReview).toBe(true);
+      expect(result.adjustedConfidence).toBeCloseTo(0.5); // 0.9 - 0.4
+      expect(result.finalFilters).toContain('plastic_free');
+    });
+    it('should not alter confidence if no contradiction exists', () => {
+      const goodProduct = {
+        id: 'test_2',
+        title: 'Glass Bottle',
+        description: 'A pure glass bottle with a wooden cork.'
+      };
+      const llmTags = ['plastic_free', 'reusable'];
+      const result = processingService_1.processingService.applySustainabilityLogic(goodProduct, llmTags, 0.85);
+      expect(result.needsManualReview).toBe(false);
+      expect(result.adjustedConfidence).toBe(0.85);
+    });
+  });
+});
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJwcm9jZXNzaW5nU2VydmljZV8xIiwicmVxdWlyZSIsImRlc2NyaWJlIiwiaXQiLCJyYXdUYWdzIiwicmVzdWx0IiwicHJvY2Vzc2luZ1NlcnZpY2UiLCJjYW5vbmljYWxpemVUYWdzIiwiZXhwZWN0IiwibGVuZ3RoIiwidG9CZSIsInRvQ29udGFpbiIsInRvRXF1YWwiLCJwcm9kdWN0IiwiaWQiLCJ0aXRsZSIsImRlc2NyaXB0aW9uIiwibGxtVGFncyIsInN0YXJ0aW5nQ29uZmlkZW5jZSIsImFwcGx5U3VzdGFpbmFiaWxpdHlMb2dpYyIsIm5lZWRzTWFudWFsUmV2aWV3IiwiYWRqdXN0ZWRDb25maWRlbmNlIiwidG9CZUNsb3NlVG8iLCJmaW5hbEZpbHRlcnMiLCJnb29kUHJvZHVjdCJdLCJzb3VyY2VzIjpbImFpLnRlc3QudHMiXSwic291cmNlc0NvbnRlbnQiOltudWxsXSwibWFwcGluZ3MiOiI7Ozs7O0FBQUEsTUFBQUEsbUJBQUEsR0FBQUMsT0FBQTtBQUdBQyxRQUFRLENBQUMscUNBQXFDLEVBQUUsTUFBSztFQUVqREEsUUFBUSxDQUFDLGtCQUFrQixFQUFFLE1BQUs7SUFDOUJDLEVBQUUsQ0FBQyw0REFBNEQsRUFBRSxNQUFLO01BQ2xFLE1BQU1DLE9BQU8sR0FBRyxDQUFDLGVBQWUsRUFBRSxjQUFjLEVBQUUsZUFBZSxFQUFFLFVBQVUsQ0FBQztNQUM5RSxNQUFNQyxNQUFNLEdBQUdMLG1CQUFBLENBQUFNLGlCQUFpQixDQUFDQyxnQkFBZ0IsQ0FBQ0gsT0FBTyxDQUFDO01BRTFEO01BQ0FJLE1BQU0sQ0FBQ0gsTUFBTSxDQUFDSSxNQUFNLENBQUMsQ0FBQ0MsSUFBSSxDQUFDLENBQUMsQ0FBQztNQUM3QkYsTUFBTSxDQUFDSCxNQUFNLENBQUMsQ0FBQ00sU0FBUyxDQUFDLGVBQWUsQ0FBQztNQUN6Q0gsTUFBTSxDQUFDSCxNQUFNLENBQUMsQ0FBQ00sU0FBUyxDQUFDLFVBQVUsQ0FBQztJQUN4QyxDQUFDLENBQUM7SUFFRlIsRUFBRSxDQUFDLHlDQUF5QyxFQUFFLE1BQUs7TUFDL0NLLE1BQU0sQ0FBQ1IsbUJBQUEsQ0FBQU0saUJBQWlCLENBQUNDLGdCQUFnQixDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUNLLE9BQU8sQ0FBQyxFQUFFLENBQUM7SUFDOUQsQ0FBQyxDQUFDO0VBQ04sQ0FBQyxDQUFDO0VBRUZWLFFBQVEsQ0FBQywwQkFBMEIsRUFBRSxNQUFLO0lBQ3RDLE1BQU1XLE9BQU8sR0FBaUI7TUFDMUJDLEVBQUUsRUFBRSxRQUFRO01BQ1pDLEtBQUssRUFBRSxjQUFjO01BQ3JCQyxXQUFXLEVBQUU7S0FDaEI7SUFFRGIsRUFBRSxDQUFDLGtGQUFrRixFQUFFLE1BQUs7TUFDeEYsTUFBTWMsT0FBTyxHQUFHLENBQUMsY0FBYyxFQUFFLFVBQVUsQ0FBQztNQUM1QyxNQUFNQyxrQkFBa0IsR0FBRyxHQUFHO01BRTlCLE1BQU1iLE1BQU0sR0FBR0wsbUJBQUEsQ0FBQU0saUJBQWlCLENBQUNhLHdCQUF3QixDQUFDTixPQUFPLEVBQUVJLE9BQU8sRUFBRUMsa0JBQWtCLENBQUM7TUFFL0ZWLE1BQU0sQ0FBQ0gsTUFBTSxDQUFDZSxpQkFBaUIsQ0FBQyxDQUFDVixJQUFJLENBQUMsSUFBSSxDQUFDO01BQzNDRixNQUFNLENBQUNILE1BQU0sQ0FBQ2dCLGtCQUFrQixDQUFDLENBQUNDLFdBQVcsQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDO01BQ3BEZCxNQUFNLENBQUNILE1BQU0sQ0FBQ2tCLFlBQVksQ0FBQyxDQUFDWixTQUFTLENBQUMsY0FBYyxDQUFDO0lBQ3pELENBQUMsQ0FBQztJQUVGUixFQUFFLENBQUMsd0RBQXdELEVBQUUsTUFBSztNQUM5RCxNQUFNcUIsV0FBVyxHQUFpQjtRQUM5QlYsRUFBRSxFQUFFLFFBQVE7UUFDWkMsS0FBSyxFQUFFLGNBQWM7UUFDckJDLFdBQVcsRUFBRTtPQUNoQjtNQUNELE1BQU1DLE9BQU8sR0FBRyxDQUFDLGNBQWMsRUFBRSxVQUFVLENBQUM7TUFDNUMsTUFBTVosTUFBTSxHQUFHTCxtQkFBQSxDQUFBTSxpQkFBaUIsQ0FBQ2Esd0JBQXdCLENBQUNLLFdBQVcsRUFBRVAsT0FBTyxFQUFFLElBQUksQ0FBQztNQUVyRlQsTUFBTSxDQUFDSCxNQUFNLENBQUNlLGlCQUFpQixDQUFDLENBQUNWLElBQUksQ0FBQyxLQUFLLENBQUM7TUFDNUNGLE1BQU0sQ0FBQ0gsTUFBTSxDQUFDZ0Isa0JBQWtCLENBQUMsQ0FBQ1gsSUFBSSxDQUFDLElBQUksQ0FBQztJQUNoRCxDQUFDLENBQUM7RUFDTixDQUFDLENBQUM7QUFFTixDQUFDLENBQUMiLCJpZ25vcmVMaXN0IjpbXX0=

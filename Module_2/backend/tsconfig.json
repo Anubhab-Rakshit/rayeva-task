@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "es2022",
+    "module": "commonjs",
+    /* Modules */
+    "rootDir": "./",
+    "moduleResolution": "node",
+    /* Emit */
+    "outDir": "./dist",
+    "removeComments": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    /* Interop Constraints */
+    "lib": [
+      "es2022"
+    ],
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests",
+    "**/*.test.ts"
+  ]
+}

@@ -1,0 +1,9 @@
+b9b802074a3363657cc8327190d71f65
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _default = exports.default = '00000000-0000-0000-0000-000000000000';
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6W10sInNvdXJjZXMiOlsibmlsLmpzIl0sInNvdXJjZXNDb250ZW50IjpbImV4cG9ydCBkZWZhdWx0ICcwMDAwMDAwMC0wMDAwLTAwMDAtMDAwMC0wMDAwMDAwMDAwMDAnO1xuIl0sIm1hcHBpbmdzIjoiOzs7Ozs7aUNBQWUsc0NBQXNDIiwiaWdub3JlTGlzdCI6W119

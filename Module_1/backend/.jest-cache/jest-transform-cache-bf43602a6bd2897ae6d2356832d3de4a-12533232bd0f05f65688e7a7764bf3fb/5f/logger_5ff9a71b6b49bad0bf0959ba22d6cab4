@@ -1,0 +1,50 @@
+8209258cc142a97ab8e8abcd57a01bf9
+"use strict";
+
+var __importDefault = void 0 && (void 0).__importDefault || function (mod) {
+  return mod && mod.__esModule ? mod : {
+    "default": mod
+  };
+};
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.logger = void 0;
+const winston_1 = __importDefault(require("winston"));
+const {
+  combine,
+  timestamp,
+  printf,
+  colorize,
+  errors
+} = winston_1.default.format;
+// Custom format for readable console logs
+const consoleFormat = printf(({
+  level,
+  message,
+  timestamp,
+  stack
+}) => {
+  return `${timestamp} ${level}: ${stack || message}`;
+});
+exports.logger = winston_1.default.createLogger({
+  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  format: combine(errors({
+    stack: true
+  }), timestamp({
+    format: 'YYYY-MM-DD HH:mm:ss'
+  }), winston_1.default.format.json()),
+  transports: [
+  // Always log to console with colors in dev
+  new winston_1.default.transports.Console({
+    format: combine(colorize(), consoleFormat)
+  }),
+  // Add file logs so there's an audit trail
+  new winston_1.default.transports.File({
+    filename: 'logs/error.log',
+    level: 'error'
+  }), new winston_1.default.transports.File({
+    filename: 'logs/combined.log'
+  })]
+});
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJ3aW5zdG9uXzEiLCJfX2ltcG9ydERlZmF1bHQiLCJyZXF1aXJlIiwiY29tYmluZSIsInRpbWVzdGFtcCIsInByaW50ZiIsImNvbG9yaXplIiwiZXJyb3JzIiwiZGVmYXVsdCIsImZvcm1hdCIsImNvbnNvbGVGb3JtYXQiLCJsZXZlbCIsIm1lc3NhZ2UiLCJzdGFjayIsImV4cG9ydHMiLCJsb2dnZXIiLCJjcmVhdGVMb2dnZXIiLCJwcm9jZXNzIiwiZW52IiwiTk9ERV9FTlYiLCJqc29uIiwidHJhbnNwb3J0cyIsIkNvbnNvbGUiLCJGaWxlIiwiZmlsZW5hbWUiXSwic291cmNlcyI6WyJsb2dnZXIudHMiXSwic291cmNlc0NvbnRlbnQiOltudWxsXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7O0FBQUEsTUFBQUEsU0FBQSxHQUFBQyxlQUFBLENBQUFDLE9BQUE7QUFFQSxNQUFNO0VBQUVDLE9BQU87RUFBRUMsU0FBUztFQUFFQyxNQUFNO0VBQUVDLFFBQVE7RUFBRUM7QUFBTSxDQUFFLEdBQUdQLFNBQUEsQ0FBQVEsT0FBTyxDQUFDQyxNQUFNO0FBRXZFO0FBQ0EsTUFBTUMsYUFBYSxHQUFHTCxNQUFNLENBQUMsQ0FBQztFQUFFTSxLQUFLO0VBQUVDLE9BQU87RUFBRVIsU0FBUztFQUFFUztBQUFLLENBQUUsS0FBSTtFQUNsRSxPQUFPLEdBQUdULFNBQVMsSUFBSU8sS0FBSyxLQUFLRSxLQUFLLElBQUlELE9BQU8sRUFBRTtBQUN2RCxDQUFDLENBQUM7QUFFV0UsT0FBQSxDQUFBQyxNQUFNLEdBQUdmLFNBQUEsQ0FBQVEsT0FBTyxDQUFDUSxZQUFZLENBQUM7RUFDdkNMLEtBQUssRUFBRU0sT0FBTyxDQUFDQyxHQUFHLENBQUNDLFFBQVEsS0FBSyxZQUFZLEdBQUcsTUFBTSxHQUFHLE9BQU87RUFDL0RWLE1BQU0sRUFBRU4sT0FBTyxDQUNYSSxNQUFNLENBQUM7SUFBRU0sS0FBSyxFQUFFO0VBQUksQ0FBRSxDQUFDLEVBQ3ZCVCxTQUFTLENBQUM7SUFBRUssTUFBTSxFQUFFO0VBQXFCLENBQUUsQ0FBQyxFQUM1Q1QsU0FBQSxDQUFBUSxPQUFPLENBQUNDLE1BQU0sQ0FBQ1csSUFBSSxFQUFFLENBQ3hCO0VBQ0RDLFVBQVUsRUFBRTtFQUNSO0VBQ0EsSUFBSXJCLFNBQUEsQ0FBQVEsT0FBTyxDQUFDYSxVQUFVLENBQUNDLE9BQU8sQ0FBQztJQUMzQmIsTUFBTSxFQUFFTixPQUFPLENBQUNHLFFBQVEsRUFBRSxFQUFFSSxhQUFhO0dBQzVDLENBQUM7RUFDRjtFQUNBLElBQUlWLFNBQUEsQ0FBQVEsT0FBTyxDQUFDYSxVQUFVLENBQUNFLElBQUksQ0FBQztJQUFFQyxRQUFRLEVBQUUsZ0JBQWdCO0lBQUViLEtBQUssRUFBRTtFQUFPLENBQUUsQ0FBQyxFQUMzRSxJQUFJWCxTQUFBLENBQUFRLE9BQU8sQ0FBQ2EsVUFBVSxDQUFDRSxJQUFJLENBQUM7SUFBRUMsUUFBUSxFQUFFO0VBQW1CLENBQUUsQ0FBQztDQUVyRSxDQUFDIiwiaWdub3JlTGlzdCI6W119

@@ -1,0 +1,13 @@
+0388f798ecd40598889bf291ffebc8c5
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+const express_1 = require("express");
+const productController_1 = require("../controllers/productController");
+const router = (0, express_1.Router)();
+// Define API endpoint
+router.post('/analyze', productController_1.productController.processProductMetadata);
+exports.default = router;
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJleHByZXNzXzEiLCJyZXF1aXJlIiwicHJvZHVjdENvbnRyb2xsZXJfMSIsInJvdXRlciIsIlJvdXRlciIsInBvc3QiLCJwcm9kdWN0Q29udHJvbGxlciIsInByb2Nlc3NQcm9kdWN0TWV0YWRhdGEiLCJleHBvcnRzIiwiZGVmYXVsdCJdLCJzb3VyY2VzIjpbInByb2R1Y3RSb3V0ZXMudHMiXSwic291cmNlc0NvbnRlbnQiOltudWxsXSwibWFwcGluZ3MiOiI7Ozs7O0FBQUEsTUFBQUEsU0FBQSxHQUFBQyxPQUFBO0FBQ0EsTUFBQUMsbUJBQUEsR0FBQUQsT0FBQTtBQUVBLE1BQU1FLE1BQU0sR0FBRyxJQUFBSCxTQUFBLENBQUFJLE1BQU0sR0FBRTtBQUV2QjtBQUNBRCxNQUFNLENBQUNFLElBQUksQ0FBQyxVQUFVLEVBQUVILG1CQUFBLENBQUFJLGlCQUFpQixDQUFDQyxzQkFBc0IsQ0FBQztBQUVqRUMsT0FBQSxDQUFBQyxPQUFBLEdBQWVOLE1BQU0iLCJpZ25vcmVMaXN0IjpbXX0=

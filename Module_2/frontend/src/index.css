@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700;900&family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-void: #080501;
+  --bg-surface: #0d0703;
+  --bg-card: rgba(18, 10, 4, 0.92);
+  --bg-card-hover: rgba(24, 14, 5, 0.96);
+
+  --fire: #f97316;
+  --fire-bright: #fb923c;
+  --fire-dim: rgba(249, 115, 22, 0.12);
+  --fire-border: rgba(249, 115, 22, 0.2);
+  --fire-border-bright: rgba(249, 115, 22, 0.5);
+
+  --gold: #f59e0b;
+  --gold-bright: #fbbf24;
+  --gold-dim: rgba(245, 158, 11, 0.1);
+  --gold-text: #fef3c7;
+
+  --white-hot: #fff7ed;
+  --ash: rgba(255, 237, 213, 0.06);
+
+  --text-primary: #fef3c7;
+  --text-secondary: #fdba74;
+  --text-muted: #44260f;
+  --text-ghost: #1c0d04;
+
+  --danger: #ef4444;
+  --success: #84cc16;
+
+  --border-dim: rgba(249, 115, 22, 0.07);
+  --border-mid: rgba(249, 115, 22, 0.18);
+  --border-bright: rgba(249, 115, 22, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-void);
+
+  /* Texture layer 1: Heat grid */
+  background-image:
+    repeating-linear-gradient(rgba(249, 115, 22, 0.03) 1px, transparent 1px),
+    repeating-linear-gradient(90deg, rgba(249, 115, 22, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+
+  color: var(--text-primary);
+  font-family: 'Bricolage Grotesque', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Texture layer 2: Noise grain */
+body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 100;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--fire-dim);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(249, 115, 22, 0.3);
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 1px solid rgba(249, 115, 22, 0.4);
+  outline-offset: 2px;
+}
+
+input,
+textarea,
+select {
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+}
+
+::selection {
+  background: rgba(249, 115, 22, 0.3);
+  color: var(--text-primary);
+}

@@ -1,0 +1,44 @@
+341b8f963c3c9aa7df5836306b835d38
+/*
+  Sentence class that generates sample elements from sentences
+  Copyright (C) 2018 Hugo W.L. ter Doest
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+'use strict';
+
+class Sentence {
+  constructor(data) {
+    this.taggedWords = [];
+    if (data) {
+      this.taggedWords = data;
+    }
+  }
+  addTaggedWord(token, tag) {
+    this.taggedWords.push({
+      token: token,
+      tag: tag
+    });
+  }
+  clone() {
+    const s = new Sentence();
+    this.taggedWords.forEach(function (wordObject) {
+      s.addTaggedWord(wordObject.token, wordObject.tag);
+    });
+    return s;
+  }
+}
+module.exports = Sentence;
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJTZW50ZW5jZSIsImNvbnN0cnVjdG9yIiwiZGF0YSIsInRhZ2dlZFdvcmRzIiwiYWRkVGFnZ2VkV29yZCIsInRva2VuIiwidGFnIiwicHVzaCIsImNsb25lIiwicyIsImZvckVhY2giLCJ3b3JkT2JqZWN0IiwibW9kdWxlIiwiZXhwb3J0cyJdLCJzb3VyY2VzIjpbIlNlbnRlbmNlLmpzIl0sInNvdXJjZXNDb250ZW50IjpbIi8qXG4gIFNlbnRlbmNlIGNsYXNzIHRoYXQgZ2VuZXJhdGVzIHNhbXBsZSBlbGVtZW50cyBmcm9tIHNlbnRlbmNlc1xuICBDb3B5cmlnaHQgKEMpIDIwMTggSHVnbyBXLkwuIHRlciBEb2VzdFxuXG4gIFRoaXMgcHJvZ3JhbSBpcyBmcmVlIHNvZnR3YXJlOiB5b3UgY2FuIHJlZGlzdHJpYnV0ZSBpdCBhbmQvb3IgbW9kaWZ5XG4gIGl0IHVuZGVyIHRoZSB0ZXJtcyBvZiB0aGUgR05VIEdlbmVyYWwgUHVibGljIExpY2Vuc2UgYXMgcHVibGlzaGVkIGJ5XG4gIHRoZSBGcmVlIFNvZnR3YXJlIEZvdW5kYXRpb24sIGVpdGhlciB2ZXJzaW9uIDMgb2YgdGhlIExpY2Vuc2UsIG9yXG4gIChhdCB5b3VyIG9wdGlvbikgYW55IGxhdGVyIHZlcnNpb24uXG5cbiAgVGhpcyBwcm9ncmFtIGlzIGRpc3RyaWJ1dGVkIGluIHRoZSBob3BlIHRoYXQgaXQgd2lsbCBiZSB1c2VmdWwsXG4gIGJ1dCBXSVRIT1VUIEFOWSBXQVJSQU5UWTsgd2l0aG91dCBldmVuIHRoZSBpbXBsaWVkIHdhcnJhbnR5IG9mXG4gIE1FUkNIQU5UQUJJTElUWSBvciBGSVRORVNTIEZPUiBBIFBBUlRJQ1VMQVIgUFVSUE9TRS4gIFNlZSB0aGVcbiAgR05VIEdlbmVyYWwgUHVibGljIExpY2Vuc2UgZm9yIG1vcmUgZGV0YWlscy5cblxuICBZb3Ugc2hvdWxkIGhhdmUgcmVjZWl2ZWQgYSBjb3B5IG9mIHRoZSBHTlUgR2VuZXJhbCBQdWJsaWMgTGljZW5zZVxuICBhbG9uZyB3aXRoIHRoaXMgcHJvZ3JhbS4gIElmIG5vdCwgc2VlIDxodHRwOi8vd3d3LmdudS5vcmcvbGljZW5zZXMvPi5cbiovXG5cbid1c2Ugc3RyaWN0J1xuXG5jbGFzcyBTZW50ZW5jZSB7XG4gIGNvbnN0cnVjdG9yIChkYXRhKSB7XG4gICAgdGhpcy50YWdnZWRXb3JkcyA9IFtdXG4gICAgaWYgKGRhdGEpIHtcbiAgICAgIHRoaXMudGFnZ2VkV29yZHMgPSBkYXRhXG4gICAgfVxuICB9XG5cbiAgYWRkVGFnZ2VkV29yZCAodG9rZW4sIHRhZykge1xuICAgIHRoaXMudGFnZ2VkV29yZHMucHVzaCh7XG4gICAgICB0b2tlbjogdG9rZW4sXG4gICAgICB0YWc6IHRhZ1xuICAgIH0pXG4gIH1cblxuICBjbG9uZSAoKSB7XG4gICAgY29uc3QgcyA9IG5ldyBTZW50ZW5jZSgpXG4gICAgdGhpcy50YWdnZWRXb3Jkcy5mb3JFYWNoKGZ1bmN0aW9uICh3b3JkT2JqZWN0KSB7XG4gICAgICBzLmFkZFRhZ2dlZFdvcmQod29yZE9iamVjdC50b2tlbiwgd29yZE9iamVjdC50YWcpXG4gICAgfSlcbiAgICByZXR1cm4gc1xuICB9XG59XG5tb2R1bGUuZXhwb3J0cyA9IFNlbnRlbmNlXG4iXSwibWFwcGluZ3MiOiJBQUFBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7O0FBRUEsWUFBWTs7QUFFWixNQUFNQSxRQUFRLENBQUM7RUFDYkMsV0FBV0EsQ0FBRUMsSUFBSSxFQUFFO0lBQ2pCLElBQUksQ0FBQ0MsV0FBVyxHQUFHLEVBQUU7SUFDckIsSUFBSUQsSUFBSSxFQUFFO01BQ1IsSUFBSSxDQUFDQyxXQUFXLEdBQUdELElBQUk7SUFDekI7RUFDRjtFQUVBRSxhQUFhQSxDQUFFQyxLQUFLLEVBQUVDLEdBQUcsRUFBRTtJQUN6QixJQUFJLENBQUNILFdBQVcsQ0FBQ0ksSUFBSSxDQUFDO01BQ3BCRixLQUFLLEVBQUVBLEtBQUs7TUFDWkMsR0FBRyxFQUFFQTtJQUNQLENBQUMsQ0FBQztFQUNKO0VBRUFFLEtBQUtBLENBQUEsRUFBSTtJQUNQLE1BQU1DLENBQUMsR0FBRyxJQUFJVCxRQUFRLENBQUMsQ0FBQztJQUN4QixJQUFJLENBQUNHLFdBQVcsQ0FBQ08sT0FBTyxDQUFDLFVBQVVDLFVBQVUsRUFBRTtNQUM3Q0YsQ0FBQyxDQUFDTCxhQUFhLENBQUNPLFVBQVUsQ0FBQ04sS0FBSyxFQUFFTSxVQUFVLENBQUNMLEdBQUcsQ0FBQztJQUNuRCxDQUFDLENBQUM7SUFDRixPQUFPRyxDQUFDO0VBQ1Y7QUFDRjtBQUNBRyxNQUFNLENBQUNDLE9BQU8sR0FBR2IsUUFBUSIsImlnbm9yZUxpc3QiOltdfQ==
