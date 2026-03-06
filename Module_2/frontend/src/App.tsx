@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity } from 'lucide-react';
+import { Activity, Mic } from 'lucide-react';
 
 export default function App() {
     const [phase, setPhase] = useState<1 | 2 | 3>(1);
@@ -134,22 +134,19 @@ export default function App() {
                             className="w-7 h-7 rounded-sm flex items-center justify-center font-display font-black text-sm"
                             style={{ background: 'var(--text-primary)', color: 'var(--bg-void)' }}
                         >
-                            R
+                            F
                         </div>
                         <span style={{ fontFamily: '"Bricolage Grotesque", sans-serif', fontWeight: 700, color: 'var(--text-primary)', fontSize: '16px' }}>
-                            Rayeva
+                            ForgeProcure
                         </span>
                         <div style={{ width: '1px', height: '16px', background: 'var(--border-dim)' }} />
                         <span style={{ color: 'var(--fire-bright)', fontSize: '12px', fontFamily: '"Space Mono", monospace' }}>
-                            PROPOSAL_ENGINE_V2
+                            ENTERPRISE_AI_v2
                         </span>
                     </div>
 
-                    <div className="flex items-center gap-4 hidden md:flex font-mono text-xs">
-                        <span style={{ color: 'var(--text-muted)' }}>01 CATALOG</span>
-                        <span className="px-3 py-1 rounded" style={{ background: 'var(--fire)', color: 'var(--bg-void)', fontWeight: 'bold' }}>02 PROPOSAL</span>
-                        <span style={{ color: 'var(--text-muted)' }}>03 IMPACT</span>
-                        <span style={{ color: 'var(--text-muted)' }}>04 SUPPORT</span>
+                    <div className="flex items-center gap-4 hidden md:flex font-mono text-[10px]">
+                        <span style={{ color: 'var(--text-muted)' }}>MOLTEN_FORGE_PROTOCOL</span>
                     </div>
                 </header>
 
@@ -161,7 +158,7 @@ export default function App() {
                     )}
                     {phase === 1 && <Phase1Intake formData={formData} setFormData={setFormData} onGenerate={generateProposal} />}
                     {phase === 2 && <Phase2Generating formData={formData} />}
-                    {phase === 3 && proposalData && <Phase3Deck formData={formData} proposal={proposalData} />}
+                    {phase === 3 && proposalData && <Phase3Deck formData={formData} proposal={proposalData} setProposalData={setProposalData} />}
                 </main>
             </div>
 
@@ -252,7 +249,7 @@ export default function App() {
         .heading-hero { font-family:'Cormorant Garamond',serif; font-size:56px; line-height:1.1; color:var(--text-primary); font-weight:700; }
         .heading-hero-bold { font-family:'Bricolage Grotesque',sans-serif; font-size:56px; line-height:1.1; color:var(--fire); font-weight:800; }
         .hero-number { font-family:'Cormorant Garamond',serif; color:var(--gold-text); font-weight:900; }
-        .mono-label { font-family:'Space Mono',monospace; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; }
+        .mono-label { font-family:'Space Mono',monospace; color:rgba(253,186,116,0.6); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
         /* Scan line */
         .scan-line-amber { position:absolute; left:0; right:0; height:100px; background:linear-gradient(180deg,transparent,rgba(249,115,22,0.15),transparent); pointer-events:none; z-index:50; animation:scanAmber 4s linear infinite; }
         /* Underline glow pulse (applied after draw animation) */
@@ -338,11 +335,11 @@ function Phase1Intake({ formData, setFormData, onGenerate }: any) {
                 <SpotlightCard className="lg:col-span-2 p-8 flex flex-col gap-8">
                     <div className="grid grid-cols-2 gap-6">
                         <div className="flex flex-col gap-2">
-                            <label className="font-mono text-xs text-[var(--fire-bright)]">P-01 <span className="text-[var(--text-muted)] ml-2">CLIENT_COMPANY</span></label>
+                            <label className="font-mono text-xs text-[var(--fire-bright)]">P-01 <span className="text-[var(--text-secondary)] opacity-60 ml-2">CLIENT_COMPANY</span></label>
                             <input type="text" className="molten-input w-full p-3 rounded" value={formData.companyName} onChange={e => setFormData({ ...formData, companyName: e.target.value })} />
                         </div>
                         <div className="flex flex-col gap-2">
-                            <label className="font-mono text-xs text-[var(--fire-bright)]">P-02 <span className="text-[var(--text-muted)] ml-2">INDUSTRY_VERTICAL</span></label>
+                            <label className="font-mono text-xs text-[var(--fire-bright)]">P-02 <span className="text-[var(--text-secondary)] opacity-60 ml-2">INDUSTRY_VERTICAL</span></label>
                             <select className="molten-input w-full p-3 rounded appearance-none" value={formData.industry} onChange={e => setFormData({ ...formData, industry: e.target.value })}>
                                 <option value="tech">Technology / SaaS</option>
                                 <option value="finance">Finance / Banking</option>
@@ -352,7 +349,7 @@ function Phase1Intake({ formData, setFormData, onGenerate }: any) {
                     </div>
                     <div className="grid grid-cols-2 gap-6">
                         <div className="flex flex-col gap-2">
-                            <label className="font-mono text-xs text-[var(--fire-bright)]">P-03 <span className="text-[var(--text-muted)] ml-2">OCCASION</span></label>
+                            <label className="font-mono text-xs text-[var(--fire-bright)]">P-03 <span className="text-[var(--text-secondary)] opacity-60 ml-2">OCCASION</span></label>
                             <select className="molten-input w-full p-3 rounded appearance-none" value={formData.occasion} onChange={e => setFormData({ ...formData, occasion: e.target.value })}>
                                 <option value="employee_onboarding">Employee Onboarding</option>
                                 <option value="corporate_gifting">Festive Corporate Gifting</option>
@@ -361,7 +358,7 @@ function Phase1Intake({ formData, setFormData, onGenerate }: any) {
                         </div>
                     </div>
                     <div className="flex flex-col gap-4 mt-4 pt-6 border-t border-[rgba(249,115,22,0.1)]">
-                        <label className="font-mono text-xs text-[var(--fire-bright)]">P-04 <span className="text-[var(--text-muted)] ml-2">BUDGET_PARAMETERS</span></label>
+                        <label className="font-mono text-xs text-[var(--fire-bright)]">P-04 <span className="text-[var(--text-secondary)] opacity-60 ml-2">BUDGET_PARAMETERS</span></label>
                         <div className="flex gap-4 mb-2">
                             <div className="flex-1">
                                 <div className="font-mono text-[10px] text-[var(--text-muted)] mb-1">UNIT COST (INR)</div>
@@ -510,16 +507,117 @@ function Phase2Generating({ formData }: any) {
 }
 
 // --- PHASE 3 ---
-function Phase3Deck({ formData, proposal }: any) {
+function Phase3Deck({ formData, proposal, setProposalData }: any) {
     const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     const bBreakdown = proposal.budget_breakdown;
+
+    const [instruction, setInstruction] = useState('');
+    const [isRefining, setIsRefining] = useState(false);
+    const [isListening, setIsListening] = useState(false);
+
+    const startListening = () => {
+        // @ts-ignore
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Your browser does not support Speech Recognition.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = () => setIsListening(true);
+
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            setInstruction(transcript);
+        };
+
+        recognition.onerror = (event: any) => {
+            console.error("Speech recognition error", event.error);
+            setIsListening(false);
+        };
+
+        recognition.onend = () => setIsListening(false);
+
+        recognition.start();
+    };
+
+    const handleRefine = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!instruction.trim() || isRefining) return;
+        setIsRefining(true);
+        try {
+            const res = await fetch('http://localhost:3001/api/v1/proposals/refine', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    currentProposal: proposal,
+                    instruction,
+                    input: formData
+                })
+            });
+            if (!res.ok) throw new Error("Refinement API failed.");
+            const json = await res.json();
+            setProposalData(json.data);
+            setInstruction('');
+        } catch (err) {
+            console.error(err);
+            alert("Refinement Failed. Please try again.");
+        } finally {
+            setIsRefining(false);
+        }
+    };
+
+    const exportPdf = () => {
+        const element = document.getElementById('proposal-deck-content');
+        if (!element) return;
+        
+        const opt = {
+            margin:       [10, 10, 10, 10],
+            filename:     `ForgeProcure_${proposal.proposal_id.substring(0,8)}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#080501' },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        // Use the globally injected html2pdf
+        //@ts-ignore 
+        window.html2pdf().set(opt).from(element).save();
+    };
+
+    const handleUpdateProduct = (idx: number, newCost: number, newQty: number) => {
+        // Deep copy
+        const newMix = [...proposal.product_mix];
+        newMix[idx] = { ...newMix[idx], unit_cost_inr: newCost, quantity_per_kit: newQty };
+        
+        // Live Recalculation Engine
+        const products_total = newMix.reduce((sum, p) => sum + (p.unit_cost_inr * p.quantity_per_kit), 0);
+        
+        // Math matches backend architecture ratios
+        const packaging = Math.round(products_total * (15 / 70));
+        const logistics_buffer = Math.round(products_total * (10 / 70));
+        const contingency = Math.round(products_total * (5 / 70));
+        const grand_total = products_total + packaging + logistics_buffer + contingency;
+        
+        const reqTotal = formData.budgetPerUnit * formData.totalUnits;
+        const budget_utilization_percent = Number(((grand_total / reqTotal) * 100).toFixed(1));
+
+        setProposalData({
+            ...proposal,
+            product_mix: newMix,
+            budget_breakdown: { ...bBreakdown, products_total, packaging, logistics_buffer, contingency, grand_total, budget_utilization_percent }
+        });
+    };
 
     return (
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="flex flex-col gap-6 w-full -mt-4 relative">
             {/* Cinematic Stamp Header */}
             <div className="w-full text-left font-mono text-[10px] leading-relaxed relative flex justify-between items-end border-b border-[rgba(249,115,22,0.15)] pb-6 mb-4">
                 <div className="flex flex-col gap-1">
-                    <div className="text-[var(--gold)] font-['Bricolage_Grotesque'] tracking-widest text-xs mb-1">RAYEVA_MOLTEN_FORGE</div>
+                    <div className="text-[var(--gold)] font-['Bricolage_Grotesque'] tracking-widest text-xs mb-1">FORGEPROCURE_FORGE_AI</div>
                     <div className="text-[var(--text-muted)]">PROPOSAL_ID: <span className="text-[var(--text-primary)]">{proposal.proposal_id.substring(0, 18).toUpperCase()}</span></div>
                     <div className="text-[var(--text-muted)]">PREPARED FOR: <span className="text-[var(--fire-bright)]">{proposal.client_summary.company}</span></div>
                     <div className="text-[var(--text-muted)]">DATE GENERATED: <span className="text-[var(--text-primary)]">{dateStr}</span></div>
@@ -553,7 +651,7 @@ function Phase3Deck({ formData, proposal }: any) {
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[rgba(249,115,22,0.08)] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 ↗ SAVE PROPOSAL
                             </button>
-                            <button className="w-full py-2 font-mono text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors tracking-widest uppercase">
+                            <button onClick={exportPdf} className="w-full py-2 font-mono text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors tracking-widest uppercase">
                                 ⬇ Export PDF
                             </button>
                         </div>
@@ -561,14 +659,50 @@ function Phase3Deck({ formData, proposal }: any) {
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 flex flex-col gap-16 pb-32 max-w-4xl relative">
-                    <SectionProductMix products={proposal.product_mix} />
+                <div id="proposal-deck-content" className="flex-1 flex flex-col gap-16 pb-32 max-w-4xl relative">
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-xl z-0">
+                        <div className="scan-line-amber" />
+                    </div>
+                    <SectionProductMix products={proposal.product_mix} onUpdateProduct={handleUpdateProduct} />
                     <SectionBudget breakdown={bBreakdown} reqTotal={formData.budgetPerUnit * formData.totalUnits} />
                     <SectionImpact impact={proposal.impact_summary} />
                     <SectionNarrative narrative={proposal.proposal_narrative} company={proposal.client_summary.company} />
                     <SectionQuality score={proposal.proposal_quality_score} warnings={proposal.warnings} />
                 </div>
             </div>
+
+            {/* Refine with AI Chat */}
+            <form onSubmit={handleRefine} className="fixed bottom-6 right-6 z-50 molten-card p-4 w-96 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10px] text-[var(--fire-bright)] uppercase tracking-widest flex items-center gap-2">
+                        <Activity className="w-3 h-3" />
+                        Refine with AI
+                    </span>
+                    {isRefining && <span className="font-mono text-[9px] text-[var(--gold)] animate-pulse">Processing...</span>}
+                </div>
+                <div className="flex gap-2">
+                    <button 
+                        type="button" 
+                        onClick={startListening} 
+                        disabled={isRefining || isListening} 
+                        className={`px-3 py-2 rounded transition-colors border ${isListening ? 'bg-[rgba(239,68,68,0.2)] border-red-500 text-red-400' : 'bg-[rgba(249,115,22,0.1)] border-[rgba(249,115,22,0.3)] hover:bg-[rgba(249,115,22,0.2)] hover:border-[var(--fire)] text-[var(--gold)]'}`}
+                        title="Voice Instruct"
+                    >
+                        <Mic className={`w-4 h-4 ${isListening ? 'animate-pulse' : ''}`} />
+                    </button>
+                    <input 
+                        type="text" 
+                        value={instruction} 
+                        onChange={e => setInstruction(e.target.value)}
+                        placeholder="e.g. Swap coasters for bamboo notebooks..." 
+                        className="molten-input flex-1 px-3 py-2 text-xs font-['Bricolage_Grotesque'] placeholder:text-[rgba(255,255,255,0.2)]"
+                        disabled={isRefining || isListening}
+                    />
+                    <button type="submit" disabled={isRefining || !instruction.trim()} className="bg-[rgba(249,115,22,0.1)] border border-[rgba(249,115,22,0.3)] hover:bg-[rgba(249,115,22,0.2)] hover:border-[var(--fire)] text-[var(--gold)] px-4 py-2 rounded text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        ↲
+                    </button>
+                </div>
+            </form>
         </motion.div>
     );
 }
@@ -601,7 +735,7 @@ function NavItem({ active, num, children }: { active?: boolean, num: string, chi
     );
 }
 
-function SectionProductMix({ products }: any) {
+function SectionProductMix({ products, onUpdateProduct }: any) {
     const getAccent = (cat: string) => {
         const c = cat.toLowerCase();
         if (c.includes('stationery')) return '#f97316';
@@ -615,19 +749,21 @@ function SectionProductMix({ products }: any) {
     return (
         <section className="relative pt-6">
             <div className="absolute top-0 right-0 font-['Cormorant_Garamond'] text-[96px] text-[rgba(249,115,22,0.04)] leading-none select-none -translate-y-6">01</div>
-            <h2 className="text-[var(--fire)] font-['Bricolage_Grotesque'] font-[800] text-xl mb-6">CURATED PRODUCT MIX</h2>
+            <h2 className="text-[var(--fire)] font-['Bricolage_Grotesque'] font-[800] text-xl mb-6 flex items-center gap-3">CURATED PRODUCT MIX <span className="font-mono text-[9px] px-2 py-0.5 rounded bg-[rgba(249,115,22,0.1)] text-[var(--fire-bright)] font-normal border border-[rgba(249,115,22,0.2)] tracking-widest">INTERACTIVE_MODE_ACTIVE</span></h2>
 
             <div className="flex flex-col gap-4 relative z-10">
                 {products.map((p: any, idx: number) => (
                     <ProductCard
                         key={idx}
+                        idx={idx}
                         name={p.product_name}
-                        cost={`₹${p.unit_cost_inr.toLocaleString('en-IN')}`}
+                        cost={p.unit_cost_inr}
                         qty={p.quantity_per_kit}
                         color={getAccent(p.category)}
                         slug={p.category.replace(/\s+/g, '_').toLowerCase()}
                         story={p.sustainability_story}
                         why={p.why_this_product}
+                        onUpdateProduct={onUpdateProduct}
                     />
                 ))}
             </div>
@@ -635,7 +771,7 @@ function SectionProductMix({ products }: any) {
     );
 }
 
-function ProductCard({ name, cost, qty, color, slug, story, why }: any) {
+function ProductCard({ idx, name, cost, qty, color, slug, story, why, onUpdateProduct }: any) {
     return (
         <div className="molten-card group overflow-hidden relative border border-[rgba(249,115,22,0.08)] hover:border-[rgba(249,115,22,0.25)] transition-all">
             <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: color }} />
@@ -643,7 +779,15 @@ function ProductCard({ name, cost, qty, color, slug, story, why }: any) {
                 <div className="flex-1">
                     <div className="flex items-center gap-3 mb-1">
                         <span className="font-mono text-[9px] px-2 py-0.5 rounded border" style={{ borderColor: 'rgba(249,115,22,0.25)', color: 'var(--fire-bright)' }}>{slug}</span>
-                        <span className="text-[var(--text-muted)] font-mono text-xs">QTY: {qty}</span>
+                        <div className="flex items-center text-[var(--text-muted)] font-mono text-xs gap-1">
+                            QTY: 
+                            <input 
+                                type="number" 
+                                value={qty} 
+                                onChange={(e) => onUpdateProduct(idx, cost, parseInt(e.target.value) || 0)}
+                                className="w-12 bg-transparent border-b border-transparent focus:outline-none focus:border-[var(--fire)] text-center px-1 pb-0.5 transition-colors"
+                            />
+                        </div>
                     </div>
                     <h3 className="font-['Bricolage_Grotesque'] font-[600] text-[16px] text-[var(--text-primary)] group-hover:translate-x-1 transition-transform">
                         {name}
@@ -655,9 +799,17 @@ function ProductCard({ name, cost, qty, color, slug, story, why }: any) {
                         {why}
                     </p>
                 </div>
-                <div className="text-right flex flex-col justify-end">
+                <div className="text-right flex flex-col justify-end items-end relative z-10">
                     <div className="font-mono text-[10px] text-[var(--text-muted)] mb-1">UNIT COST</div>
-                    <div className="font-['Cormorant_Garamond'] font-[700] text-[24px] text-[var(--gold-text)]">{cost}</div>
+                    <div className="flex items-center font-['Cormorant_Garamond'] font-[700] text-[24px] text-[var(--gold-text)]">
+                        <span className="mr-1 opacity-70">₹</span>
+                        <input 
+                            type="number" 
+                            value={cost}
+                            onChange={(e) => onUpdateProduct(idx, parseInt(e.target.value) || 0, qty)}
+                            className="bg-transparent border-b border-transparent focus:border-[var(--fire)] border-dashed focus:border-solid focus:outline-none text-right w-24 hover:bg-[rgba(249,115,22,0.05)] rounded px-1 transition-colors z-20"
+                        />
+                    </div>
                     <div className="w-24 h-[3px] rounded mt-2 ml-auto" style={{ background: 'linear-gradient(90deg, var(--fire), var(--gold))' }} />
                 </div>
             </div>

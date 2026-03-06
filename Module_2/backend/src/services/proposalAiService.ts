@@ -138,6 +138,97 @@ Generate the JSON response matching the schema exactly.`;
             };
         }
     }
+
+    public async refineWithAi(currentProposal: GeneratedProposal, instruction: string): Promise<{ prompt: string; response: GeneratedProposal; model: string }> {
+        const systemPrompt = `You are a sustainable procurement consultant. 
+You are given a current proposal JSON and an instruction from the client to modify it.
+Apply the requested changes to the JSON, keeping all other data exactly the same unless affected by the instruction.
+Recalculate the budget breakdown (grand_total, packaging, etc) appropriately based on the new product mix if items were changed.
+Ensure the output remains strictly valid JSON matching the schema.
+
+Schema (strict):
+${JSON.stringify(proposalOutputSchema, null, 2)}`;
+
+        const userPrompt = `Current Proposal JSON:
+${JSON.stringify(currentProposal, null, 2)}
+
+Instruction: ${instruction}
+
+Generate the updated JSON response matching the schema exactly.`;
+
+        const prompt = `${systemPrompt}\n\n${userPrompt}`;
+
+        if (process.env.GEMINI_API_KEY) {
+            try {
+                const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+                const model = genAI.getGenerativeModel({
+                    model: "gemini-2.5-flash",
+                    generationConfig: { responseMimeType: "application/json" }
+                });
+
+                logger.info(`Sending refine request to Gemini for proposal ${currentProposal.proposal_id}`);
+                const result = await model.generateContent(prompt);
+                const responseText = result.response.text();
+
+                const responseObj = JSON.parse(responseText);
+                // Preserve original ID
+                responseObj.proposal_id = currentProposal.proposal_id;
+
+                return { prompt, response: responseObj as GeneratedProposal, model: "gemini-2.5-flash" };
+            } catch (error) {
+                logger.error("LLM Refinement Failed.", error);
+                throw error;
+            }
+        } else {
+            logger.warn("GEMINI_API_KEY is not set! Using a mock refinement JSON.");
+            
+            // Generate a fake refined response by overriding one item
+            const fakeRefinedMix = [...currentProposal.product_mix];
+            if (fakeRefinedMix.length > 0) {
+                // Determine if they asked to swap or add something
+                const instructedItem = instruction.toLowerCase().includes('pen') ? 'Premium Fountain Pen' : 
+                                       instruction.toLowerCase().includes('bag') ? 'Canvas Duffel' : 'Eco-Friendly Tech Charger';
+                
+                fakeRefinedMix[0] = {
+                    ...fakeRefinedMix[0],
+                    product_name: instructedItem,
+                    unit_cost_inr: 850,
+                    sustainability_story: "Refined by AI: Incorporates recycled materials representing a 40% emission reduction.",
+                    why_this_product: "User requested alternative item."
+                };
+            }
+
+            // Fake recalculate
+            const products_total = fakeRefinedMix.reduce((sum, p) => sum + (p.unit_cost_inr * p.quantity_per_kit), 0) * currentProposal.client_summary.total_units;
+            const packaging = Math.round(products_total * (15 / 70));
+            const logistics_buffer = Math.round(products_total * (10 / 70));
+            const contingency = Math.round(products_total * (5 / 70));
+            const grand_total = products_total + packaging + logistics_buffer + contingency;
+            
+            const reqTotal = currentProposal.client_summary.budget_per_unit * currentProposal.client_summary.total_units;
+            const budget_utilization_percent = Number(((grand_total / reqTotal) * 100).toFixed(1));
+
+            const mockObj: GeneratedProposal = {
+                ...currentProposal,
+                product_mix: fakeRefinedMix,
+                budget_breakdown: {
+                    products_total,
+                    packaging,
+                    logistics_buffer,
+                    contingency,
+                    grand_total,
+                    per_unit_cost: Math.round(grand_total / currentProposal.client_summary.total_units),
+                    budget_utilization_percent
+                }
+            };
+
+            return { 
+                prompt, 
+                response: mockObj, 
+                model: "mock-refinement-model" 
+            };
+        }
+    }
 }
 
 export const proposalAiService = new ProposalAiService();

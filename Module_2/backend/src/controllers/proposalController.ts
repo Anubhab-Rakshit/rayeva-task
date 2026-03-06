@@ -76,6 +76,36 @@ export class ProposalController {
             next(error);
         }
     }
+    public async refineProposal(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { currentProposal, instruction, input } = req.body;
+            
+            if (!currentProposal || !instruction || !input) {
+                res.status(400).json({ error: "Missing required fields: currentProposal, instruction, input" });
+                return;
+            }
+
+            logger.info(`--- Starting AI Refinement for ${currentProposal.proposal_id} ---`);
+            const llmResult = await proposalAiService.refineWithAi(currentProposal, instruction);
+            const rawProposal = llmResult.response;
+
+            const validation = validateProposalData(rawProposal);
+            
+            const enrichedProposal = proposalProcessingService.evaluateProposal(input, rawProposal);
+            if (!validation.valid) {
+                enrichedProposal.needs_revision = true;
+                if (!enrichedProposal.warnings) enrichedProposal.warnings = [];
+                enrichedProposal.warnings.push("Schema validation failed during refinement");
+            }
+
+            // Could also log this to Supabase if desired, but for now just returning the new state
+            
+            res.status(200).json({ success: true, data: enrichedProposal, validation: validation.valid ? "passed" : "failed" });
+        } catch (error) {
+            logger.error(`Error in refinement pipeline:`, error);
+            next(error);
+        }
+    }
 }
 
 export const proposalController = new ProposalController();
