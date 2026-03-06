@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./Module_1/frontend/public/vite.svg" width="120" alt="EchoSynthetics Logo" />
+  <img src="./assets/logo.png" width="140" style="border-radius: 20px; box-shadow: 0 0 20px rgba(74,222,128,0.2);" alt="EchoSynthetics Logo" />
   <h1>ForgeProcure / EchoSynthetics 🌿</h1>
   <p><em>A modern, AI-powered B2B procurement suite focused on sustainable purchasing decisions, intelligent cataloging, and automated impact reporting.</em></p>
 </div>
